@@ -1,214 +1,270 @@
 /**
  * Efizientia Hero Section
- * Design: Fondo degradado claro con iframe del widget externo de estudio de factura
- * - Supertítulo: "!!aunque parezca mentira!!"
- * - Título: "Sube tu factura. Nosotros hackeamos tu precio de la luz."
- * - Iframe: widget externo con autoajuste de altura via postMessage
- *
- * NOTA: El widget tiene CSP frame-ancestors restringido a efizientia.es.
- * En producción (dominio efizientia.es) cargará correctamente.
- * El autoajuste de altura funciona mediante:
- *   1. postMessage del widget (si lo emite)
- *   2. ResizeObserver sobre el iframe (si es same-origin)
- *   3. Polling del scrollHeight del iframe (fallback cross-origin)
+ * Design: Fondo negro con carrusel de imágenes a pantalla completa (sticky/fixed).
+ * Las imágenes tienen un aura negra (gradiente radial + bordes) que las integra con el fondo.
+ * El texto y el iframe flotan encima sobre el fondo oscuro.
+ * Carrusel automático con transición crossfade cada 5s.
+ * Botón de play en la imagen (decorativo, como en el original).
  */
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Zap, CheckCircle2 } from "lucide-react";
+import { Play, Zap, CheckCircle2 } from "lucide-react";
 
 const WIDGET_URL =
   "https://efizientia.kiwatio.net/widget/estudio-factura?token=6%7CgupGAGbFslNaPLq9Oo7v7dYpmzCTOssQ9YLDooxV44583597";
 
-const steps = [
-  { id: 1, label: "Sube tus facturas" },
-  { id: 2, label: "Comparamos por ti" },
-  { id: 3, label: "Contratación segura" },
-  { id: 4, label: "SMS de confirmación" },
+// Imágenes del carrusel subidas al CDN
+const HERO_IMAGES = [
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/hero1_a3fbf53c.jpg",
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/hero2_195ddc15.jpg",
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/hero3_e3745729.jpg",
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/hero4_fd46090f.jpg",
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/hero5_e07fdd4c.jpg",
 ];
 
-const benefits = [
-  "Sin permanencias ni letra pequeña",
-  "Comparamos +175 compañías",
-  "Ahorro medio del 32%",
-];
+const SLIDE_DURATION = 5000; // ms por imagen
 
-// Alturas conocidas por paso del wizard (fallback si no hay postMessage)
-const STEP_HEIGHTS: Record<number, number> = {
-  1: 620,  // Paso 1: subir factura
-  2: 900,  // Paso 2: ver ofertas (más contenido)
-  3: 700,  // Paso 3: datos personales
-  4: 500,  // Paso 4: confirmación
-};
+// Widget iframe
+const WIDGET_DEFAULT_HEIGHT = 620;
 
 export default function HeroSection() {
+  // Carrusel
+  const [current, setCurrent] = useState(0);
+  const [prev, setPrev] = useState<number | null>(null);
+  const [transitioning, setTransitioning] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Iframe
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [iframeHeight, setIframeHeight] = useState(620);
+  const [iframeHeight, setIframeHeight] = useState(WIDGET_DEFAULT_HEIGHT);
   const [iframeLoaded, setIframeLoaded] = useState(false);
-  const [iframeError, setIframeError] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Función para actualizar la altura de forma segura
-  const updateHeight = useCallback((h: number) => {
-    if (h > 200) {
-      setIframeHeight(h + 24); // padding extra para evitar scrollbar
-    }
+  // ── Carrusel automático ──
+  const goTo = useCallback((idx: number) => {
+    if (transitioning) return;
+    setPrev(current);
+    setTransitioning(true);
+    setCurrent(idx);
+    setTimeout(() => {
+      setPrev(null);
+      setTransitioning(false);
+    }, 900);
+  }, [current, transitioning]);
+
+  useEffect(() => {
+    timerRef.current = setInterval(() => {
+      setCurrent((c) => {
+        const next = (c + 1) % HERO_IMAGES.length;
+        setPrev(c);
+        setTransitioning(true);
+        setTimeout(() => {
+          setPrev(null);
+          setTransitioning(false);
+        }, 900);
+        return next;
+      });
+    }, SLIDE_DURATION);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
 
-  // 1. Escuchar postMessage del widget
+  // ── Iframe autoajuste ──
+  const updateHeight = useCallback((h: number) => {
+    if (h > 200) setIframeHeight(h + 24);
+  }, []);
+
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Solo aceptar mensajes del dominio del widget
-      if (!event.origin.includes("kiwatio.net") && !event.origin.includes("efizientia")) return;
-
+      if (!event.origin.includes("kiwatio") && !event.origin.includes("efizientia")) return;
       const data = event.data;
       if (!data) return;
-
-      let newHeight: number | null = null;
-
-      if (typeof data === "number" && data > 100) {
-        newHeight = data;
-      } else if (typeof data === "object") {
-        // Formatos comunes de widgets: { height }, { iframeHeight }, { type: "resize", height }
-        const h =
-          data.height ??
-          data.iframeHeight ??
-          data.frameHeight ??
-          data.scrollHeight ??
-          (data.type === "resize" ? data.value : null) ??
-          (data.type === "setHeight" ? data.value : null);
-        if (typeof h === "number" && h > 100) newHeight = h;
+      let h: number | null = null;
+      if (typeof data === "number" && data > 100) h = data;
+      else if (typeof data === "object") {
+        h = data.height ?? data.iframeHeight ?? data.frameHeight ?? null;
       } else if (typeof data === "string") {
-        const num = parseInt(data, 10);
-        if (!isNaN(num) && num > 100) {
-          newHeight = num;
-        } else {
-          try {
-            const obj = JSON.parse(data);
-            const h = obj?.height ?? obj?.iframeHeight ?? obj?.frameHeight;
-            if (typeof h === "number" && h > 100) newHeight = h;
-          } catch {
-            // no es JSON
-          }
-        }
+        const n = parseInt(data, 10);
+        if (!isNaN(n) && n > 100) h = n;
+        else { try { const o = JSON.parse(data); h = o?.height ?? null; } catch {} }
       }
-
-      if (newHeight !== null) {
-        updateHeight(newHeight);
-      }
+      if (h !== null) updateHeight(h);
     };
-
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, [updateHeight]);
 
-  // 2. Al cargar el iframe, intentar leer el alto (same-origin) o iniciar polling
   const handleIframeLoad = useCallback(() => {
     setIframeLoaded(true);
-    setIframeError(false);
-
     const iframe = iframeRef.current;
     if (!iframe) return;
-
-    // Intentar acceso same-origin
     try {
       const doc = iframe.contentDocument || iframe.contentWindow?.document;
       if (doc) {
         const h = doc.documentElement.scrollHeight || doc.body.scrollHeight;
         if (h > 200) updateHeight(h);
-
-        // ResizeObserver sobre el body del iframe
         const ro = new ResizeObserver(() => {
           try {
-            const newH = doc.documentElement.scrollHeight || doc.body.scrollHeight;
-            if (newH > 200) updateHeight(newH);
-          } catch {
-            // cross-origin
-          }
+            const nh = doc.documentElement.scrollHeight || doc.body.scrollHeight;
+            if (nh > 200) updateHeight(nh);
+          } catch {}
         });
         ro.observe(doc.body);
-        return () => ro.disconnect();
       }
     } catch {
-      // cross-origin: usar polling como fallback
-      startPolling();
+      // cross-origin polling
+      pollingRef.current = setInterval(() => {
+        try {
+          const doc2 = iframeRef.current?.contentDocument || iframeRef.current?.contentWindow?.document;
+          if (doc2) {
+            const nh = doc2.documentElement.scrollHeight || doc2.body.scrollHeight;
+            if (nh > 200) updateHeight(nh);
+          }
+        } catch {
+          if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+        }
+      }, 800);
     }
   }, [updateHeight]);
 
-  // 3. Polling fallback para cross-origin (intenta leer scrollHeight periódicamente)
-  const startPolling = useCallback(() => {
-    if (pollingRef.current) return;
-    pollingRef.current = setInterval(() => {
-      const iframe = iframeRef.current;
-      if (!iframe) return;
-      try {
-        const doc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (doc) {
-          const h = doc.documentElement.scrollHeight || doc.body.scrollHeight;
-          if (h > 200) {
-            updateHeight(h);
-          }
-        }
-      } catch {
-        // cross-origin: no podemos leer, detenemos el polling
-        if (pollingRef.current) {
-          clearInterval(pollingRef.current);
-          pollingRef.current = null;
-        }
-      }
-    }, 800);
-  }, [updateHeight]);
-
-  useEffect(() => {
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current);
-    };
-  }, []);
-
-  // Detectar error de carga (iframe bloqueado por CSP)
-  const handleIframeError = useCallback(() => {
-    setIframeError(true);
-    setIframeLoaded(true);
-  }, []);
+  useEffect(() => () => { if (pollingRef.current) clearInterval(pollingRef.current); }, []);
 
   return (
     <section
       id="hero"
-      className="pt-20 pb-16"
-      style={{ background: "linear-gradient(135deg, #fff 0%, #fdf0f7 60%, #fff 100%)" }}
+      className="relative overflow-hidden"
+      style={{ backgroundColor: "#000", minHeight: "100vh" }}
     >
-      <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-start">
+      {/* ══════════════════════════════════════
+          CARRUSEL DE FONDO — imágenes crossfade
+      ══════════════════════════════════════ */}
+      <div className="absolute inset-0 z-0">
+        {HERO_IMAGES.map((src, i) => (
+          <div
+            key={src}
+            className="absolute inset-0"
+            style={{
+              opacity: i === current ? 1 : i === prev ? 0 : 0,
+              transition: i === current
+                ? "opacity 0.9s ease-in-out"
+                : i === prev
+                ? "opacity 0.9s ease-in-out"
+                : "none",
+              zIndex: i === current ? 2 : i === prev ? 1 : 0,
+            }}
+          >
+            {/* Imagen de fondo */}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                backgroundImage: `url(${src})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center top",
+                backgroundRepeat: "no-repeat",
+              }}
+            />
 
-          {/* ── LEFT: Text content ── */}
-          <div className="pt-4 lg:pt-8">
+            {/* Aura negra — gradiente radial desde los bordes hacia el centro */}
+            {/* Borde izquierdo */}
+            <div style={{
+              position: "absolute", inset: 0,
+              background: "linear-gradient(to right, #000 0%, rgba(0,0,0,0.85) 18%, rgba(0,0,0,0.4) 35%, transparent 55%)",
+              zIndex: 1,
+            }} />
+            {/* Borde derecho */}
+            <div style={{
+              position: "absolute", inset: 0,
+              background: "linear-gradient(to left, #000 0%, rgba(0,0,0,0.7) 15%, transparent 40%)",
+              zIndex: 1,
+            }} />
+            {/* Borde superior */}
+            <div style={{
+              position: "absolute", inset: 0,
+              background: "linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.5) 8%, transparent 25%)",
+              zIndex: 1,
+            }} />
+            {/* Borde inferior */}
+            <div style={{
+              position: "absolute", inset: 0,
+              background: "linear-gradient(to top, #000 0%, rgba(0,0,0,0.8) 20%, transparent 45%)",
+              zIndex: 1,
+            }} />
+          </div>
+        ))}
+      </div>
+
+      {/* ══════════════════════════════════════
+          CONTENIDO — texto + iframe
+      ══════════════════════════════════════ */}
+      <div
+        className="relative z-10 container mx-auto px-4 lg:px-8 max-w-7xl"
+        style={{ paddingTop: "100px", paddingBottom: "100px" }}
+      >
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+
+          {/* ── LEFT: Texto ── */}
+          <div className="relative">
+            {/* Botón play decorativo (como en el original, sobre la imagen) */}
+            <div
+              className="absolute"
+              style={{ bottom: "40px", left: "20px", zIndex: 20 }}
+            >
+              <button
+                className="flex items-center justify-center rounded-full border-2 border-white/80 text-white/90 hover:scale-110 transition-transform duration-200"
+                style={{
+                  width: 64,
+                  height: 64,
+                  backgroundColor: "rgba(0,0,0,0.4)",
+                  backdropFilter: "blur(4px)",
+                }}
+                aria-label="Ver vídeo"
+              >
+                <Play size={26} fill="white" />
+              </button>
+            </div>
+
             <p
-              className="text-sm font-bold tracking-widest uppercase mb-3"
+              className="text-sm font-bold tracking-widest uppercase mb-4"
               style={{ color: "#e91e8c", fontFamily: "'Nunito Sans', sans-serif" }}
             >
               !!aunque parezca mentira!!
             </p>
             <h1
-              className="text-4xl lg:text-5xl xl:text-6xl font-black text-gray-900 leading-tight mb-6"
-              style={{ fontFamily: "'Montserrat', sans-serif" }}
+              className="font-black text-white leading-none mb-5"
+              style={{
+                fontFamily: "'Montserrat', sans-serif",
+                fontSize: "clamp(3.2rem, 6vw, 5.5rem)",
+                lineHeight: 1.05,
+                textShadow: "0 2px 20px rgba(0,0,0,0.8)",
+              }}
             >
               Sube tu factura.{" "}
-              <span style={{ color: "#e91e8c" }}>Nosotros hackeamos</span> tu precio de la luz.
+              <br />
+              Nosotros hackeamos tu precio de la luz.
             </h1>
             <p
-              className="text-gray-600 text-lg leading-relaxed mb-8"
-              style={{ fontFamily: "'Nunito Sans', sans-serif" }}
+              className="text-white/80 text-base leading-relaxed mb-6"
+              style={{
+                fontFamily: "'Nunito Sans', sans-serif",
+                textShadow: "0 2px 12px rgba(0,0,0,0.95)",
+                maxWidth: "520px",
+              }}
             >
               Sube tu factura y olvídate de las tarifas abusivas. Hackeamos el mercado eléctrico,
               cazamos el mejor precio oculto y lo ponemos a tu nombre. Sin rodeos, sin tecnicismos,
               solo ahorro real.
             </p>
 
-            {/* Benefits list */}
-            <ul className="space-y-3 mb-8">
-              {benefits.map((b, i) => (
+            {/* Beneficios */}
+            <ul className="space-y-2 mb-8">
+              {[
+                "Sin permanencias ni letra pequeña",
+                "Comparamos +175 compañías",
+                "Ahorro medio del 32%",
+              ].map((b, i) => (
                 <li key={i} className="flex items-center gap-3">
-                  <CheckCircle2 size={20} style={{ color: "#e91e8c", flexShrink: 0 }} />
+                  <CheckCircle2 size={18} style={{ color: "#e91e8c", flexShrink: 0 }} />
                   <span
-                    className="text-gray-800 font-semibold"
+                    className="text-white/80 font-semibold text-sm"
                     style={{ fontFamily: "'Nunito Sans', sans-serif" }}
                   >
                     {b}
@@ -217,38 +273,39 @@ export default function HeroSection() {
               ))}
             </ul>
 
-            {/* Steps pills */}
+            {/* Pills de pasos */}
             <div className="flex flex-wrap gap-2">
-              {steps.map((step) => (
+              {["Sube tus facturas", "Comparamos por ti", "Contratación segura", "SMS de confirmación"].map((s, i) => (
                 <span
-                  key={step.id}
+                  key={i}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
                   style={{
-                    backgroundColor: "#fdf0f7",
+                    backgroundColor: "rgba(233,30,140,0.15)",
                     color: "#e91e8c",
-                    border: "1px solid #e91e8c30",
+                    border: "1px solid rgba(233,30,140,0.35)",
                     fontFamily: "'Nunito Sans', sans-serif",
                   }}
                 >
-                  <Zap size={11} />
-                  {step.label}
+                  <Zap size={10} />
+                  {s}
                 </span>
               ))}
             </div>
           </div>
 
-          {/* ── RIGHT: Widget iframe container ── */}
+          {/* ── RIGHT: Iframe widget ── */}
           <div
             className="rounded-2xl overflow-hidden shadow-2xl"
             style={{
-              backgroundColor: "#111111",
-              border: "1px solid #222",
+              backgroundColor: "#fff",
+              border: "1px solid rgba(255,255,255,0.15)",
+              boxShadow: "0 25px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05)",
             }}
           >
-            {/* Header bar */}
+            {/* Header bar oscuro */}
             <div
               className="flex items-center gap-3 px-5 py-4"
-              style={{ borderBottom: "1px solid #222", backgroundColor: "#0d0d0d" }}
+              style={{ borderBottom: "1px solid #e5e7eb", backgroundColor: "#0d0d0d" }}
             >
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
@@ -267,7 +324,6 @@ export default function HeroSection() {
                   Estudio gratuito · Sin compromiso
                 </p>
               </div>
-              {/* Traffic lights decorativos */}
               <div className="ml-auto flex gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#ff5f57" }} />
                 <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#febc2e" }} />
@@ -275,35 +331,29 @@ export default function HeroSection() {
               </div>
             </div>
 
-            {/* Iframe wrapper con altura dinámica */}
+            {/* Iframe wrapper */}
             <div
               style={{
                 position: "relative",
                 height: iframeHeight,
-                transition: "height 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
-                backgroundColor: "#ffffff",
+                transition: "height 0.5s cubic-bezier(0.4,0,0.2,1)",
+                backgroundColor: "#fff",
               }}
             >
-              {/* Loading overlay */}
               {!iframeLoaded && (
                 <div
                   className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10"
-                  style={{ backgroundColor: "#111111" }}
+                  style={{ backgroundColor: "#f9f9f9" }}
                 >
                   <div
-                    className="w-12 h-12 rounded-full border-4 border-white/10"
+                    className="w-10 h-10 rounded-full border-4 border-gray-200"
                     style={{ borderTopColor: "#e91e8c", animation: "efispin 0.8s linear infinite" }}
                   />
-                  <p
-                    className="text-white/40 text-sm font-semibold"
-                    style={{ fontFamily: "'Nunito Sans', sans-serif" }}
-                  >
-                    Cargando el estudio de factura...
+                  <p className="text-gray-400 text-sm font-semibold" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
+                    Cargando...
                   </p>
                 </div>
               )}
-
-              {/* The iframe */}
               <iframe
                 ref={iframeRef}
                 src={WIDGET_URL}
@@ -314,24 +364,40 @@ export default function HeroSection() {
                 scrolling="no"
                 allow="clipboard-write; camera"
                 onLoad={handleIframeLoad}
-                onError={handleIframeError}
-                style={{
-                  display: "block",
-                  border: "none",
-                  backgroundColor: "transparent",
-                  width: "100%",
-                  height: "100%",
-                }}
+                style={{ display: "block", border: "none", width: "100%", height: "100%" }}
               />
             </div>
           </div>
         </div>
       </div>
 
+      {/* ══════════════════════════════════════
+          INDICADORES del carrusel (dots)
+      ══════════════════════════════════════ */}
+      <div
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20"
+      >
+        {HERO_IMAGES.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => goTo(i)}
+            aria-label={`Imagen ${i + 1}`}
+            style={{
+              width: i === current ? 24 : 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: i === current ? "#e91e8c" : "rgba(255,255,255,0.4)",
+              transition: "all 0.3s ease",
+              border: "none",
+              cursor: "pointer",
+              padding: 0,
+            }}
+          />
+        ))}
+      </div>
+
       <style>{`
-        @keyframes efispin {
-          to { transform: rotate(360deg); }
-        }
+        @keyframes efispin { to { transform: rotate(360deg); } }
       `}</style>
     </section>
   );
