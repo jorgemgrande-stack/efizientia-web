@@ -1,33 +1,185 @@
 /**
  * Efizientia Hero Section
- * Design: Fondo blanco/claro con formulario wizard de 4 pasos
+ * Design: Fondo degradado claro con iframe del widget externo de estudio de factura
  * - Supertítulo: "!!aunque parezca mentira!!"
  * - Título: "Sube tu factura. Nosotros hackeamos tu precio de la luz."
- * - Formulario: teléfono, tipo (luz/gas), subir factura, privacidad, CTA
+ * - Iframe: widget externo con autoajuste de altura via postMessage
+ *
+ * NOTA: El widget tiene CSP frame-ancestors restringido a efizientia.es.
+ * En producción (dominio efizientia.es) cargará correctamente.
+ * El autoajuste de altura funciona mediante:
+ *   1. postMessage del widget (si lo emite)
+ *   2. ResizeObserver sobre el iframe (si es same-origin)
+ *   3. Polling del scrollHeight del iframe (fallback cross-origin)
  */
-import { useState } from "react";
-import { Upload, Phone, Zap, Flame, CheckSquare, ArrowRight } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { Zap, CheckCircle2 } from "lucide-react";
+
+const WIDGET_URL =
+  "https://efizientia.kiwatio.net/widget/estudio-factura?token=6%7CgupGAGbFslNaPLq9Oo7v7dYpmzCTOssQ9YLDooxV44583597";
 
 const steps = [
-  { id: 1, label: "Sube tus facturas", icon: Upload },
-  { id: 2, label: "Comparamos por ti", icon: Zap },
-  { id: 3, label: "Contratación segura", icon: CheckSquare },
-  { id: 4, label: "SMS de confirmación", icon: Phone },
+  { id: 1, label: "Sube tus facturas" },
+  { id: 2, label: "Comparamos por ti" },
+  { id: 3, label: "Contratación segura" },
+  { id: 4, label: "SMS de confirmación" },
 ];
 
+const benefits = [
+  "Sin permanencias ni letra pequeña",
+  "Comparamos +175 compañías",
+  "Ahorro medio del 32%",
+];
+
+// Alturas conocidas por paso del wizard (fallback si no hay postMessage)
+const STEP_HEIGHTS: Record<number, number> = {
+  1: 620,  // Paso 1: subir factura
+  2: 900,  // Paso 2: ver ofertas (más contenido)
+  3: 700,  // Paso 3: datos personales
+  4: 500,  // Paso 4: confirmación
+};
+
 export default function HeroSection() {
-  const [activeStep, setActiveStep] = useState(1);
-  const [tipoFactura, setTipoFactura] = useState<"luz" | "gas">("luz");
-  const [privacidad, setPrivacidad] = useState(false);
-  const [telefono, setTelefono] = useState("");
-  const [dragging, setDragging] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [iframeHeight, setIframeHeight] = useState(620);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+  const [iframeError, setIframeError] = useState(false);
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Función para actualizar la altura de forma segura
+  const updateHeight = useCallback((h: number) => {
+    if (h > 200) {
+      setIframeHeight(h + 24); // padding extra para evitar scrollbar
+    }
+  }, []);
+
+  // 1. Escuchar postMessage del widget
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Solo aceptar mensajes del dominio del widget
+      if (!event.origin.includes("kiwatio.net") && !event.origin.includes("efizientia")) return;
+
+      const data = event.data;
+      if (!data) return;
+
+      let newHeight: number | null = null;
+
+      if (typeof data === "number" && data > 100) {
+        newHeight = data;
+      } else if (typeof data === "object") {
+        // Formatos comunes de widgets: { height }, { iframeHeight }, { type: "resize", height }
+        const h =
+          data.height ??
+          data.iframeHeight ??
+          data.frameHeight ??
+          data.scrollHeight ??
+          (data.type === "resize" ? data.value : null) ??
+          (data.type === "setHeight" ? data.value : null);
+        if (typeof h === "number" && h > 100) newHeight = h;
+      } else if (typeof data === "string") {
+        const num = parseInt(data, 10);
+        if (!isNaN(num) && num > 100) {
+          newHeight = num;
+        } else {
+          try {
+            const obj = JSON.parse(data);
+            const h = obj?.height ?? obj?.iframeHeight ?? obj?.frameHeight;
+            if (typeof h === "number" && h > 100) newHeight = h;
+          } catch {
+            // no es JSON
+          }
+        }
+      }
+
+      if (newHeight !== null) {
+        updateHeight(newHeight);
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [updateHeight]);
+
+  // 2. Al cargar el iframe, intentar leer el alto (same-origin) o iniciar polling
+  const handleIframeLoad = useCallback(() => {
+    setIframeLoaded(true);
+    setIframeError(false);
+
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+
+    // Intentar acceso same-origin
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (doc) {
+        const h = doc.documentElement.scrollHeight || doc.body.scrollHeight;
+        if (h > 200) updateHeight(h);
+
+        // ResizeObserver sobre el body del iframe
+        const ro = new ResizeObserver(() => {
+          try {
+            const newH = doc.documentElement.scrollHeight || doc.body.scrollHeight;
+            if (newH > 200) updateHeight(newH);
+          } catch {
+            // cross-origin
+          }
+        });
+        ro.observe(doc.body);
+        return () => ro.disconnect();
+      }
+    } catch {
+      // cross-origin: usar polling como fallback
+      startPolling();
+    }
+  }, [updateHeight]);
+
+  // 3. Polling fallback para cross-origin (intenta leer scrollHeight periódicamente)
+  const startPolling = useCallback(() => {
+    if (pollingRef.current) return;
+    pollingRef.current = setInterval(() => {
+      const iframe = iframeRef.current;
+      if (!iframe) return;
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (doc) {
+          const h = doc.documentElement.scrollHeight || doc.body.scrollHeight;
+          if (h > 200) {
+            updateHeight(h);
+          }
+        }
+      } catch {
+        // cross-origin: no podemos leer, detenemos el polling
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
+      }
+    }, 800);
+  }, [updateHeight]);
+
+  useEffect(() => {
+    return () => {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+    };
+  }, []);
+
+  // Detectar error de carga (iframe bloqueado por CSP)
+  const handleIframeError = useCallback(() => {
+    setIframeError(true);
+    setIframeLoaded(true);
+  }, []);
 
   return (
-    <section className="section-light pt-20 pb-16 min-h-[90vh] flex items-center" id="hero" style={{ background: 'linear-gradient(135deg, #fff 0%, #fdf0f7 50%, #fff 100%)' }}>
+    <section
+      id="hero"
+      className="pt-20 pb-16"
+      style={{ background: "linear-gradient(135deg, #fff 0%, #fdf0f7 60%, #fff 100%)" }}
+    >
       <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
-          {/* Left: Text content */}
-          <div>
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-start">
+
+          {/* ── LEFT: Text content ── */}
+          <div className="pt-4 lg:pt-8">
             <p
               className="text-sm font-bold tracking-widest uppercase mb-3"
               style={{ color: "#e91e8c", fontFamily: "'Nunito Sans', sans-serif" }}
@@ -50,168 +202,137 @@ export default function HeroSection() {
               solo ahorro real.
             </p>
 
-            {/* Steps indicator */}
-            <div className="flex flex-wrap gap-3 mb-8">
-              {steps.map((step) => {
-                const Icon = step.icon;
-                return (
-                  <button
-                    key={step.id}
-                    onClick={() => setActiveStep(step.id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                      activeStep === step.id
-                        ? "text-white shadow-md"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
-                    style={
-                      activeStep === step.id
-                        ? { backgroundColor: "#e91e8c" }
-                        : {}
-                    }
+            {/* Benefits list */}
+            <ul className="space-y-3 mb-8">
+              {benefits.map((b, i) => (
+                <li key={i} className="flex items-center gap-3">
+                  <CheckCircle2 size={20} style={{ color: "#e91e8c", flexShrink: 0 }} />
+                  <span
+                    className="text-gray-800 font-semibold"
+                    style={{ fontFamily: "'Nunito Sans', sans-serif" }}
                   >
-                    <Icon size={14} />
-                    {step.label}
-                  </button>
-                );
-              })}
-            </div>
+                    {b}
+                  </span>
+                </li>
+              ))}
+            </ul>
 
-            {/* Step description */}
-            <div className="text-gray-700 text-sm font-medium">
-              {activeStep === 1 && "Introduce una o varias facturas de la luz en nuestra plataforma."}
-              {activeStep === 2 && "Analizamos todas las compañías y te mostramos la que más ahorro te aporta."}
-              {activeStep === 3 && "Adjunta los datos necesarios y validamos la documentación de forma segura."}
-              {activeStep === 4 && "La compañía elegida te enviará un SMS para confirmar el alta."}
+            {/* Steps pills */}
+            <div className="flex flex-wrap gap-2">
+              {steps.map((step) => (
+                <span
+                  key={step.id}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
+                  style={{
+                    backgroundColor: "#fdf0f7",
+                    color: "#e91e8c",
+                    border: "1px solid #e91e8c30",
+                    fontFamily: "'Nunito Sans', sans-serif",
+                  }}
+                >
+                  <Zap size={11} />
+                  {step.label}
+                </span>
+              ))}
             </div>
           </div>
 
-          {/* Right: Form */}
+          {/* ── RIGHT: Widget iframe container ── */}
           <div
-            className="rounded-2xl p-6 lg:p-8 shadow-2xl"
-            style={{ backgroundColor: "#111111", border: "1px solid #222" }}
+            className="rounded-2xl overflow-hidden shadow-2xl"
+            style={{
+              backgroundColor: "#111111",
+              border: "1px solid #222",
+            }}
           >
-            <h2
-              className="text-white text-xl font-black mb-6"
-              style={{ fontFamily: "'Montserrat', sans-serif" }}
+            {/* Header bar */}
+            <div
+              className="flex items-center gap-3 px-5 py-4"
+              style={{ borderBottom: "1px solid #222", backgroundColor: "#0d0d0d" }}
             >
-              Optimiza tu factura ahora
-            </h2>
-
-            {/* Phone input */}
-            <div className="mb-4">
-              <label className="text-white/70 text-sm font-semibold mb-2 block">
-                Teléfono de contacto
-              </label>
-              <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg px-4 py-3 focus-within:border-[#e91e8c] transition-colors">
-                <Phone size={16} className="text-white/40" />
-                <input
-                  type="tel"
-                  placeholder="600 000 000"
-                  value={telefono}
-                  onChange={(e) => setTelefono(e.target.value)}
-                  className="bg-transparent text-white placeholder-white/30 text-sm font-medium outline-none flex-1"
-                />
-              </div>
-            </div>
-
-            {/* Tipo de factura */}
-            <div className="mb-4">
-              <label className="text-white/70 text-sm font-semibold mb-2 block">
-                Tipo de factura
-              </label>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setTipoFactura("luz")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-bold transition-all duration-200 ${
-                    tipoFactura === "luz"
-                      ? "text-white"
-                      : "bg-white/5 text-white/50 border border-white/10 hover:border-white/20"
-                  }`}
-                  style={tipoFactura === "luz" ? { backgroundColor: "#e91e8c" } : {}}
-                >
-                  <Zap size={16} />
-                  Luz
-                </button>
-                <button
-                  onClick={() => setTipoFactura("gas")}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-bold transition-all duration-200 ${
-                    tipoFactura === "gas"
-                      ? "text-white"
-                      : "bg-white/5 text-white/50 border border-white/10 hover:border-white/20"
-                  }`}
-                  style={tipoFactura === "gas" ? { backgroundColor: "#e91e8c" } : {}}
-                >
-                  <Flame size={16} />
-                  Gas
-                </button>
-              </div>
-            </div>
-
-            {/* File upload */}
-            <div className="mb-4">
-              <label className="text-white/70 text-sm font-semibold mb-2 block">
-                Sube tu factura
-              </label>
               <div
-                onDragEnter={() => setDragging(true)}
-                onDragLeave={() => setDragging(false)}
-                onDrop={() => setDragging(false)}
-                className={`border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 cursor-pointer ${
-                  dragging
-                    ? "border-[#e91e8c] bg-[#e91e8c]/10"
-                    : "border-white/20 hover:border-[#e91e8c]/50 hover:bg-white/5"
-                }`}
+                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: "#e91e8c" }}
               >
-                <Upload size={24} className="mx-auto mb-2 text-white/40" />
-                <p className="text-white/60 text-sm">
-                  Arrastra tu PDF o foto aquí
+                <Zap size={16} className="text-white" />
+              </div>
+              <div>
+                <p
+                  className="text-white font-black text-sm leading-tight"
+                  style={{ fontFamily: "'Montserrat', sans-serif" }}
+                >
+                  Optimiza tu factura ahora
                 </p>
-                <p className="text-white/30 text-xs mt-1">PDF, JPG, PNG</p>
-                <label className="mt-3 inline-block text-xs font-bold px-3 py-1.5 rounded cursor-pointer transition-colors"
-                  style={{ backgroundColor: "#e91e8c", color: "white" }}>
-                  Seleccionar archivo
-                  <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" />
-                </label>
+                <p className="text-white/40 text-xs" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
+                  Estudio gratuito · Sin compromiso
+                </p>
+              </div>
+              {/* Traffic lights decorativos */}
+              <div className="ml-auto flex gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#ff5f57" }} />
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#febc2e" }} />
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#28c840" }} />
               </div>
             </div>
 
-            {/* Privacy checkbox */}
-            <div className="mb-6 flex items-start gap-3">
-              <input
-                type="checkbox"
-                id="privacidad"
-                checked={privacidad}
-                onChange={(e) => setPrivacidad(e.target.checked)}
-                className="mt-0.5 accent-[#e91e8c]"
-              />
-              <label htmlFor="privacidad" className="text-white/50 text-xs leading-relaxed">
-                Acepto la{" "}
-                <a href="#" style={{ color: "#e91e8c" }} className="underline">
-                  política de privacidad y protección de datos
-                </a>
-              </label>
-            </div>
-
-            {/* CTA Button */}
-            <button
-              className="w-full py-4 rounded-lg text-white font-black text-base transition-all duration-200 flex items-center justify-center gap-2"
-              style={{ backgroundColor: "#e91e8c", fontFamily: "'Montserrat', sans-serif" }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#f72585";
-                e.currentTarget.style.boxShadow = "0 4px 20px rgba(233,30,140,0.5)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#e91e8c";
-                e.currentTarget.style.boxShadow = "none";
+            {/* Iframe wrapper con altura dinámica */}
+            <div
+              style={{
+                position: "relative",
+                height: iframeHeight,
+                transition: "height 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+                backgroundColor: "#ffffff",
               }}
             >
-              <Zap size={18} />
-              Optimización
-              <ArrowRight size={18} />
-            </button>
+              {/* Loading overlay */}
+              {!iframeLoaded && (
+                <div
+                  className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10"
+                  style={{ backgroundColor: "#111111" }}
+                >
+                  <div
+                    className="w-12 h-12 rounded-full border-4 border-white/10"
+                    style={{ borderTopColor: "#e91e8c", animation: "efispin 0.8s linear infinite" }}
+                  />
+                  <p
+                    className="text-white/40 text-sm font-semibold"
+                    style={{ fontFamily: "'Nunito Sans', sans-serif" }}
+                  >
+                    Cargando el estudio de factura...
+                  </p>
+                </div>
+              )}
+
+              {/* The iframe */}
+              <iframe
+                ref={iframeRef}
+                src={WIDGET_URL}
+                title="Estudio de factura Efizientia"
+                width="100%"
+                height="100%"
+                frameBorder="0"
+                scrolling="no"
+                allow="clipboard-write; camera"
+                onLoad={handleIframeLoad}
+                onError={handleIframeError}
+                style={{
+                  display: "block",
+                  border: "none",
+                  backgroundColor: "transparent",
+                  width: "100%",
+                  height: "100%",
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes efispin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </section>
   );
 }
