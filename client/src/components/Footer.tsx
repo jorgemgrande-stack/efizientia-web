@@ -14,10 +14,10 @@ const navLinks = [
 ];
 
 const legalLinks = [
-  { label: "Política de privacidad", href: "#" },
-  { label: "Aviso legal", href: "#" },
-  { label: "Cookies", href: "#" },
-  { label: "Contacto", href: "#" },
+  { label: "Política de privacidad", href: "/privacidad" },
+  { label: "Aviso legal", href: "/aviso-legal" },
+  { label: "Cookies", href: "/cookies" },
+  { label: "Contacto", href: "/contacto" },
 ];
 
 const companies = [
@@ -29,10 +29,8 @@ const companies = [
 ];
 
 const socials = [
-  { icon: Facebook, href: "https://facebook.com", label: "Facebook" },
-  { icon: Twitter, href: "https://twitter.com", label: "X-Twitter" },
-  { icon: Instagram, href: "https://instagram.com", label: "Instagram" },
-  { icon: Youtube, href: "https://youtube.com", label: "Youtube" },
+  { icon: Facebook, href: "https://www.facebook.com/Efficientia.Energia/", label: "Facebook" },
+  { icon: Instagram, href: "https://www.instagram.com/efizientia", label: "Instagram" },
 ];
 
 export default function Footer() {
@@ -54,10 +52,14 @@ export default function Footer() {
                 }}
               />
             </div>
-            <p className="text-white/50 text-sm leading-relaxed" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
-              Hackeamos el mercado eléctrico para darte siempre el mejor precio. Sin rodeos, sin
-              tecnicismos, solo ahorro real.
-            </p>
+          <p className="text-white/50 text-sm leading-relaxed" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
+            Hackeamos el mercado eléctrico para darte siempre el mejor precio. Sin rodeos, sin
+            tecnicismos, solo ahorro real.
+          </p>
+          <div className="mt-4 space-y-1">
+            <p className="text-white/40 text-xs" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>📞 <a href="tel:+34856288341" className="hover:text-white/70 transition-colors">+34 856 28 83 41</a></p>
+            <p className="text-white/40 text-xs" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>✉️ <a href="mailto:hola@efizientia.es" className="hover:text-white/70 transition-colors">hola@efizientia.es</a></p>
+          </div>
             {/* Socials */}
             <div className="flex gap-3 mt-5">
               {socials.map((s) => {
@@ -152,7 +154,7 @@ export default function Footer() {
         {/* Copyright */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-6 border-t border-white/5">
           <p className="text-white/30 text-xs" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
-            © 2025 Efizientia. All Rights Reserved.
+            © 2026 Efizientia Energías Renovables SL · CIF B05310511 · Calle Joyería 8, 11408 Jerez de la Frontera (Cádiz)
           </p>
           <p className="text-white/20 text-xs" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
             Hackeamos el precio de la luz desde España 🇪🇸

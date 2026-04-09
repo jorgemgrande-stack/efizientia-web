@@ -7,6 +7,10 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Efis from "./pages/Efis";
 import EfiProfile from "./pages/EfiProfile";
+import Contact from "./pages/Contact";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import CookiesPolicy from "./pages/CookiesPolicy";
+import LegalNotice from "./pages/LegalNotice";
 
 function Router() {
   return (
@@ -14,6 +18,10 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/efis"} component={Efis} />
       <Route path={"/efis/:slug"} component={EfiProfile} />
+      <Route path={"/contacto"} component={Contact} />
+      <Route path={"/privacidad"} component={PrivacyPolicy} />
+      <Route path={"/cookies"} component={CookiesPolicy} />
+      <Route path={"/aviso-legal"} component={LegalNotice} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

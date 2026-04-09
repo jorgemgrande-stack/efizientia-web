@@ -68,14 +68,14 @@ export default function Navbar() {
             {/* Desktop Right Actions */}
             <div className="hidden md:flex items-center gap-3">
               <a
-                href="tel:+34900000000"
+                href="tel:+34856288341"
                 className="flex items-center gap-2 text-white/80 hover:text-white text-sm font-semibold transition-colors"
               >
                 <Phone size={16} />
                 Llamar
               </a>
               <a
-                href="https://wa.me/34600000000"
+                href="https://wa.me/34856288341"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 text-sm font-bold px-4 py-2 rounded-md transition-all duration-200"
@@ -86,10 +86,10 @@ export default function Navbar() {
                 <MessageCircle size={16} />
                 Wasapeamos
               </a>
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-white transition-colors">
+              <a href="https://www.facebook.com/Efficientia.Energia/" target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-white transition-colors">
                 <Facebook size={18} />
               </a>
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-white transition-colors">
+              <a href="https://www.instagram.com/efizientia" target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-white transition-colors">
                 <Instagram size={18} />
               </a>
             </div>
@@ -120,11 +120,11 @@ export default function Navbar() {
                 </a>
               ))}
               <div className="flex gap-4 pt-2">
-                <a href="tel:+34900000000" className="flex items-center gap-2 text-white/80 text-sm font-semibold">
+                <a href="tel:+34856288341" className="flex items-center gap-2 text-white/80 text-sm font-semibold">
                   <Phone size={16} /> Llamar
                 </a>
                 <a
-                  href="https://wa.me/34600000000"
+                  href="https://wa.me/34856288341"
                   className="flex items-center gap-2 text-sm font-bold px-4 py-2 rounded-md"
                   style={{ backgroundColor: "#e91e8c", color: "white" }}
                 >
@@ -139,7 +139,7 @@ export default function Navbar() {
       {/* Floating Chat Buttons */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3">
         <a
-          href="tel:+34900000000"
+          href="tel:+34856288341"
           className="flex items-center gap-2 text-white text-sm font-bold px-4 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
           style={{ backgroundColor: "#1a1a1a", border: "1px solid #333" }}
         >
@@ -147,7 +147,7 @@ export default function Navbar() {
           <span className="hidden sm:inline">Hablamos?</span>
         </a>
         <a
-          href="https://wa.me/34600000000"
+          href="https://wa.me/34856288341"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 text-white text-sm font-bold px-4 py-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
