@@ -75,9 +75,7 @@ export default function ProcessSection() {
             <div className="flex flex-wrap gap-2 mb-8">
               {steps.map((step) => {
                 const StepIcon = step.icon;
-                return (
-                  <>
-                  {step.href ? (
+                return step.href ? (
                     <a
                       key={step.id}
                       href={step.href}
@@ -108,9 +106,7 @@ export default function ProcessSection() {
                       <StepIcon size={14} />
                       {step.title}
                     </button>
-                  )}
-                  </>
-                );
+                  );
               })}
             </div>
 
