@@ -13,6 +13,8 @@ import CookiesPolicy from "./pages/CookiesPolicy";
 import LegalNotice from "@/pages/LegalNotice";
 import Luz from "@/pages/Luz";
 import Gas from "@/pages/Gas";
+import Humanos from "@/pages/Humanos";
+import HumanoProfile from "@/pages/HumanoProfile";
 
 function Router() {
   return (
@@ -22,6 +24,8 @@ function Router() {
       <Route path={"/efis/:slug"} component={EfiProfile} />
       <Route path={"/luz"} component={Luz} />
       <Route path={"/gas"} component={Gas} />
+      <Route path={"/humanos"} component={Humanos} />
+      <Route path={"/humanos/:slug"} component={HumanoProfile} />
       <Route path={"/contacto"} component={Contact} />
       <Route path={"/privacidad"} component={PrivacyPolicy} />
       <Route path={"/cookies"} component={CookiesPolicy} />

@@ -13,7 +13,7 @@ const navLinks = [
   { label: "Luz", href: "/luz" },
   { label: "Gas", href: "/gas" },
   { label: "Los Efis", href: "/efis" },
-  { label: "Humanos", href: "/#humanos" },
+  { label: "Humanos", href: "/humanos" },
 ];
 
 export default function Navbar() {
