@@ -6,6 +6,8 @@
 import { useState } from "react";
 import { Upload, Search, Shield, MessageSquare, Zap } from "lucide-react";
 
+const WIDGET_URL = "https://efizientia.kiwatio.net/widget/estudio-factura?token=6%7CgupGAGbFslNaPLq9Oo7v7dYpmzCTOssQ9YLDooxV44583597";
+
 const steps = [
   {
     id: 1,
@@ -13,6 +15,7 @@ const steps = [
     title: "Sube tus facturas",
     description:
       "Introduce una o varias facturas de la luz en nuestra plataforma. Arrastra el PDF o la foto directamente.",
+    href: WIDGET_URL,
   },
   {
     id: 2,
@@ -73,19 +76,40 @@ export default function ProcessSection() {
               {steps.map((step) => {
                 const StepIcon = step.icon;
                 return (
-                  <button
-                    key={step.id}
-                    onClick={() => setActiveStep(step.id)}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${
-                      activeStep === step.id
-                        ? "text-white shadow-lg"
-                        : "bg-white/5 text-white/50 border border-white/10 hover:border-white/20 hover:text-white/70"
-                    }`}
-                    style={activeStep === step.id ? { backgroundColor: "#e91e8c" } : {}}
-                  >
-                    <StepIcon size={14} />
-                    {step.title}
-                  </button>
+                  <>
+                  {step.href ? (
+                    <a
+                      key={step.id}
+                      href={step.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setActiveStep(step.id)}
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${
+                        activeStep === step.id
+                          ? "text-white shadow-lg"
+                          : "bg-white/5 text-white/50 border border-white/10 hover:border-white/20 hover:text-white/70"
+                      }`}
+                      style={activeStep === step.id ? { backgroundColor: "#e91e8c" } : {}}
+                    >
+                      <StepIcon size={14} />
+                      {step.title}
+                    </a>
+                  ) : (
+                    <button
+                      key={step.id}
+                      onClick={() => setActiveStep(step.id)}
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${
+                        activeStep === step.id
+                          ? "text-white shadow-lg"
+                          : "bg-white/5 text-white/50 border border-white/10 hover:border-white/20 hover:text-white/70"
+                      }`}
+                      style={activeStep === step.id ? { backgroundColor: "#e91e8c" } : {}}
+                    >
+                      <StepIcon size={14} />
+                      {step.title}
+                    </button>
+                  )}
+                  </>
                 );
               })}
             </div>
