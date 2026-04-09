@@ -10,7 +10,9 @@ import EfiProfile from "./pages/EfiProfile";
 import Contact from "./pages/Contact";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import CookiesPolicy from "./pages/CookiesPolicy";
-import LegalNotice from "./pages/LegalNotice";
+import LegalNotice from "@/pages/LegalNotice";
+import Luz from "@/pages/Luz";
+import Gas from "@/pages/Gas";
 
 function Router() {
   return (
@@ -18,6 +20,8 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/efis"} component={Efis} />
       <Route path={"/efis/:slug"} component={EfiProfile} />
+      <Route path={"/luz"} component={Luz} />
+      <Route path={"/gas"} component={Gas} />
       <Route path={"/contacto"} component={Contact} />
       <Route path={"/privacidad"} component={PrivacyPolicy} />
       <Route path={"/cookies"} component={CookiesPolicy} />
