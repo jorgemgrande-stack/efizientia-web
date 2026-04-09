@@ -71,9 +71,9 @@ export default function CtaBanner() {
           {/* Right: Mascot */}
           <div className="flex justify-center lg:justify-end">
             <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/efi-mascot-banner-eGDGuTnouC9PMaKu7WZBmA.webp"
+              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/efi-mascot_36782492.jpg"
               alt="Mascota Efi - tu asistente de ahorro energético"
-              className="w-64 lg:w-80 object-contain drop-shadow-2xl"
+              className="w-64 lg:w-80 object-contain drop-shadow-2xl rounded-2xl"
               style={{ filter: "drop-shadow(0 0 30px rgba(233,30,140,0.3))" }}
             />
           </div>
