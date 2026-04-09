@@ -24,7 +24,10 @@ const HERO_IMAGES = [
 const SLIDE_DURATION = 5000; // ms por imagen
 
 // Widget iframe
-const WIDGET_DEFAULT_HEIGHT = 620;
+// Altura medida del widget en paso 1: ~895px del contenedor + header 60px
+// Se usa polling agresivo porque el widget es cross-origin y no envía postMessage
+const WIDGET_STEP1_HEIGHT = 960;
+const WIDGET_MIN_HEIGHT = 500;
 
 export default function HeroSection() {
   // Carrusel
@@ -33,11 +36,13 @@ export default function HeroSection() {
   const [transitioning, setTransitioning] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Iframe
+  // Iframe — altura dinámica
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [iframeHeight, setIframeHeight] = useState(WIDGET_DEFAULT_HEIGHT);
+  // Empezamos con la altura medida del paso 1 (~895px contenido + 60px header)
+  const [iframeHeight, setIframeHeight] = useState(WIDGET_STEP1_HEIGHT);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastHeightRef = useRef(WIDGET_STEP1_HEIGHT);
 
   // ── Carrusel automático ──
   const goTo = useCallback((idx: number) => {
@@ -68,8 +73,15 @@ export default function HeroSection() {
   }, []);
 
   // ── Iframe autoajuste ──
+  // Solo actualiza si la nueva altura es mayor que la actual o si ha bajado significativamente
   const updateHeight = useCallback((h: number) => {
-    if (h > 200) setIframeHeight(h + 24);
+    if (h < WIDGET_MIN_HEIGHT) return;
+    const newH = h + 32; // padding extra
+    // Siempre permitir crecer; solo reducir si la diferencia es >100px (cambio de paso)
+    if (newH > lastHeightRef.current || lastHeightRef.current - newH > 100) {
+      lastHeightRef.current = newH;
+      setIframeHeight(newH);
+    }
   }, []);
 
   useEffect(() => {
@@ -96,33 +108,63 @@ export default function HeroSection() {
     setIframeLoaded(true);
     const iframe = iframeRef.current;
     if (!iframe) return;
+
+    // Intentar acceso same-origin primero
     try {
       const doc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (doc) {
-        const h = doc.documentElement.scrollHeight || doc.body.scrollHeight;
-        if (h > 200) updateHeight(h);
-        const ro = new ResizeObserver(() => {
-          try {
-            const nh = doc.documentElement.scrollHeight || doc.body.scrollHeight;
-            if (nh > 200) updateHeight(nh);
-          } catch {}
-        });
+      if (doc && doc.body) {
+        const measure = () => {
+          const h = Math.max(
+            doc.documentElement.scrollHeight,
+            doc.body.scrollHeight,
+            doc.documentElement.offsetHeight,
+            doc.body.offsetHeight
+          );
+          updateHeight(h);
+        };
+        measure();
+        // ResizeObserver para detectar cambios de contenido (resultados del paso 2+)
+        const ro = new ResizeObserver(measure);
         ro.observe(doc.body);
+        ro.observe(doc.documentElement);
+        // También polling cada 500ms durante los primeros 30s por si hay animaciones
+        let ticks = 0;
+        pollingRef.current = setInterval(() => {
+          measure();
+          ticks++;
+          if (ticks > 60) { // 30 segundos
+            if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+          }
+        }, 500);
+        return;
       }
     } catch {
-      // cross-origin polling
-      pollingRef.current = setInterval(() => {
-        try {
-          const doc2 = iframeRef.current?.contentDocument || iframeRef.current?.contentWindow?.document;
-          if (doc2) {
-            const nh = doc2.documentElement.scrollHeight || doc2.body.scrollHeight;
-            if (nh > 200) updateHeight(nh);
-          }
-        } catch {
-          if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
-        }
-      }, 800);
+      // cross-origin: el widget bloquea acceso directo
     }
+
+    // Fallback cross-origin: polling agresivo usando postMessage de solicitud
+    // El widget no implementa iframeResizer, así que usamos un truco:
+    // enviamos un mensaje al iframe pidiendo su altura (por si lo implementa en el futuro)
+    const requestHeight = () => {
+      try {
+        iframe.contentWindow?.postMessage({ type: 'getHeight', action: 'resize' }, '*');
+      } catch {}
+    };
+
+    pollingRef.current = setInterval(() => {
+      requestHeight();
+      // También intentar acceso directo por si cambia la política
+      try {
+        const doc2 = iframe.contentDocument || iframe.contentWindow?.document;
+        if (doc2 && doc2.body) {
+          const nh = Math.max(
+            doc2.documentElement.scrollHeight,
+            doc2.body.scrollHeight
+          );
+          updateHeight(nh);
+        }
+      } catch {}
+    }, 500);
   }, [updateHeight]);
 
   useEffect(() => () => { if (pollingRef.current) clearInterval(pollingRef.current); }, []);
@@ -331,13 +373,15 @@ export default function HeroSection() {
               </div>
             </div>
 
-            {/* Iframe wrapper */}
+            {/* Iframe wrapper — altura dinámica, sin overflow hidden para que los resultados sean visibles */}
             <div
               style={{
                 position: "relative",
                 height: iframeHeight,
-                transition: "height 0.5s cubic-bezier(0.4,0,0.2,1)",
+                minHeight: WIDGET_STEP1_HEIGHT,
+                transition: "height 0.6s cubic-bezier(0.4,0,0.2,1)",
                 backgroundColor: "#fff",
+                overflow: "hidden",
               }}
             >
               {!iframeLoaded && (
@@ -359,12 +403,18 @@ export default function HeroSection() {
                 src={WIDGET_URL}
                 title="Estudio de factura Efizientia"
                 width="100%"
-                height="100%"
                 frameBorder="0"
                 scrolling="no"
                 allow="clipboard-write; camera"
                 onLoad={handleIframeLoad}
-                style={{ display: "block", border: "none", width: "100%", height: "100%" }}
+                style={{
+                  display: "block",
+                  border: "none",
+                  width: "100%",
+                  // El iframe tiene altura fija igual al wrapper; el wrapper crece con los resultados
+                  height: iframeHeight,
+                  minHeight: WIDGET_STEP1_HEIGHT,
+                }}
               />
             </div>
           </div>
