@@ -36,17 +36,16 @@ export default function Navbar() {
       >
         <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
+            {/* Logo — versión horizontal con fondo negro, ratio 2.69:1 (500x186px) */}
             <a href="/" className="flex items-center flex-shrink-0">
-              {/* mix-blend-mode: screen hace que el fondo blanco desaparezca sobre fondo oscuro */}
               <img
-                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/efizientia-logo_cee443ca.png"
+                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/efizientia-logo-dark_f1c2a2ee.png"
                 alt="Efizientia"
                 style={{
-                  height: "44px",
-                  width: "auto",
+                  height: "40px",
+                  width: "108px", /* 40px × 2.69 ratio */
                   objectFit: "contain",
-                  mixBlendMode: "screen",
+                  objectPosition: "left center",
                 }}
               />
             </a>
