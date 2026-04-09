@@ -15,6 +15,7 @@ import Luz from "@/pages/Luz";
 import Gas from "@/pages/Gas";
 import Humanos from "@/pages/Humanos";
 import HumanoProfile from "@/pages/HumanoProfile";
+import OptimizacionFactura from "@/pages/OptimizacionFactura";
 
 function Router() {
   return (
@@ -26,6 +27,7 @@ function Router() {
       <Route path={"/gas"} component={Gas} />
       <Route path={"/humanos"} component={Humanos} />
       <Route path={"/humanos/:slug"} component={HumanoProfile} />
+      <Route path={"/optimizacion_factura_energetica"} component={OptimizacionFactura} />
       <Route path={"/contacto"} component={Contact} />
       <Route path={"/privacidad"} component={PrivacyPolicy} />
       <Route path={"/cookies"} component={CookiesPolicy} />

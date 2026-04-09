@@ -302,6 +302,8 @@ export default function HeroSection() {
                 "Sin permanencias ni letra pequeña",
                 "Comparamos +175 compañías",
                 "Ahorro medio del 32%",
+                "Contratación en menos de 5 minutos",
+                "Centralita 24h · Atención inmediata",
               ].map((b, i) => (
                 <li key={i} className="flex items-center gap-3">
                   <CheckCircle2 size={18} style={{ color: "#e91e8c", flexShrink: 0 }} />
@@ -317,7 +319,7 @@ export default function HeroSection() {
 
             {/* Pills de pasos */}
             <div className="flex flex-wrap gap-2">
-              {["Sube tus facturas", "Comparamos por ti", "Contratación segura", "SMS de confirmación"].map((s, i) => (
+              {["Sube tus facturas", "Comparamos por ti", "Contratación en 5 min", "SMS de confirmación", "Atención 24h"].map((s, i) => (
                 <span
                   key={i}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"

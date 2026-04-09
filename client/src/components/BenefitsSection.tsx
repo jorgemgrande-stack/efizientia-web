@@ -18,10 +18,11 @@ const PERFILES = [
 ];
 
 const BENEFITS = [
-  "Descubre Cuánto Puedes Ahorrar Cada Mes",
-  "Encuentra la Mejor Oferta de Luz en Minutos",
-  "Compara Todas las Compañías en un Solo Paso",
-  "Sin Trampas, Sin Complicaciones",
+  "Estudio inmediato: en menos de 2 minutos sabemos si pagas de más",
+  "Contratación en menos de 5 minutos · Firma digital desde el móvil",
+  "Centralita 24 horas · Siempre hay alguien al otro lado",
+  "Comparamos +175 compañías en un solo paso",
+  "Sin trampas, sin permanencias, sin letra pequeña",
 ];
 
 /* ── Donut SVG animado ── */

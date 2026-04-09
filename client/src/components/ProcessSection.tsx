@@ -27,9 +27,9 @@ const steps = [
   {
     id: 3,
     icon: Shield,
-    title: "Contratación segura",
+    title: "Contratación en 5 minutos",
     description:
-      "Adjunta los datos necesarios y validamos la documentación de forma segura. Firma digital.",
+      "Somos de las pocas asesorías que cierran la contratación en menos de 5 minutos. Firma digital desde el móvil, sin papeleos, sin esperas.",
   },
   {
     id: 4,

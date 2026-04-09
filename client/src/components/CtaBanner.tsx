@@ -3,7 +3,7 @@
  * Design: Fondo oscuro con gradiente, mascota Efi a la derecha
  * "Los Efis te ayudan a optimizar tu factura de la luz"
  */
-import { Zap } from "lucide-react";
+import { Zap, Clock, PhoneCall } from "lucide-react";
 
 export default function CtaBanner() {
   return (
@@ -35,12 +35,40 @@ export default function CtaBanner() {
               te ayudan a optimizar tu factura de la luz
             </h2>
             <p
-              className="text-white/60 text-lg leading-relaxed mb-8"
+              className="text-white/60 text-lg leading-relaxed mb-6"
               style={{ fontFamily: "'Nunito Sans', sans-serif" }}
             >
               Sube tu factura y te mostramos, al instante, la mejor tarifa según tu consumo. Sin
               permanencias, sin letra pequeña.
             </p>
+
+            {/* Badges diferenciales */}
+            <div className="flex flex-wrap gap-3 mb-8">
+              <div
+                className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold"
+                style={{
+                  background: "rgba(57,211,83,0.12)",
+                  border: "1px solid rgba(57,211,83,0.3)",
+                  color: "#39d353",
+                  fontFamily: "'Nunito Sans', sans-serif",
+                }}
+              >
+                <Clock size={14} />
+                Contratación en menos de 5 minutos
+              </div>
+              <div
+                className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold"
+                style={{
+                  background: "rgba(233,30,140,0.12)",
+                  border: "1px solid rgba(233,30,140,0.3)",
+                  color: "#e91e8c",
+                  fontFamily: "'Nunito Sans', sans-serif",
+                }}
+              >
+                <PhoneCall size={14} />
+                Centralita 24 horas
+              </div>
+            </div>
             <a
               href="https://efizientia.kiwatio.net/widget/estudio-factura?token=6%7CgupGAGbFslNaPLq9Oo7v7dYpmzCTOssQ9YLDooxV44583597"
               target="_blank"
