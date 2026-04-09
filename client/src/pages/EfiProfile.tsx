@@ -10,6 +10,7 @@ import { EFIS, WIDGET_URL } from "@/data/efis";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import NotFound from "@/pages/NotFound";
+import ChatModal from "@/components/ChatModal";
 
 // ── Animación de contador numérico ──────────────────────────
 function useCountUp(target: number, duration = 1200, active = false) {
@@ -83,6 +84,7 @@ export default function EfiProfile() {
 
   const [visible, setVisible] = useState(false);
   const [simState, setSimState] = useState<Record<string, boolean>>({});
+  const [chatOpen, setChatOpen] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
   const avatarRef = useRef<HTMLDivElement>(null);
 
@@ -232,6 +234,20 @@ export default function EfiProfile() {
                     </svg>
                     Optimizar mi factura
                   </a>
+                  <button
+                    onClick={() => setChatOpen(true)}
+                    className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-black text-white transition-all duration-300 hover:scale-105 hover:brightness-110"
+                    style={{
+                      background: "linear-gradient(135deg, #1a1a2e, #16213e)",
+                      border: `1px solid ${accentColor}55`,
+                      boxShadow: `0 0 16px ${accentColor}22`,
+                    }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                    </svg>
+                    Chatea con {efi.name}
+                  </button>
                   <Link
                     href="/efis"
                     className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-bold text-white/70 border border-white/12 hover:border-white/25 hover:text-white transition-all duration-300"
@@ -489,13 +505,21 @@ export default function EfiProfile() {
         @keyframes efzPulse { 0%,100%{opacity:.55} 50%{opacity:.9} }
         @keyframes efzSpin { to{transform:rotate(360deg)} }
       `}</style>
-
       <Footer />
+
+      {/* Chat Modal */}
+      <ChatModal
+        efiName={efi.name}
+        efiColor={accentColor}
+        efiImage={efi.image}
+        isOpen={chatOpen}
+        onClose={() => setChatOpen(false)}
+      />
     </div>
   );
 }
 
-// ── Sub-componentes ──────────────────────────────────────────
+// ── KpiCardcomponentes ──────────────────────────────────────────
 function KpiCard({ value, label, color, active }: { value: string; label: string; color: string; active: boolean }) {
   const isNum = /^\d+/.test(value);
   const numPart = isNum ? parseInt(value.replace(/[^\d]/g, "")) : 0;

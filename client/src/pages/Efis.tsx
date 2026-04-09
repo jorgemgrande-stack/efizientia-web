@@ -3,13 +3,16 @@
 // Design: Dark Tech, magenta #e91e8c, fondo negro #0a0a0a
 // Layout: Grid de tarjetas con hover 3D, aura neon, click → perfil
 // ============================================================
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { EFIS } from "@/data/efis";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ChatModal from "@/components/ChatModal";
 
 export default function EfisPage() {
+  const [chatEfi, setChatEfi] = useState<(typeof EFIS)[0] | null>(null);
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -60,18 +63,29 @@ export default function EfisPage() {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {EFIS.map((efi) => (
-              <EfiCard key={efi.slug} efi={efi} />
+              <EfiCard key={efi.slug} efi={efi} onChat={() => setChatEfi(efi)} />
             ))}
           </div>
         </div>
       </section>
 
       <Footer />
+
+      {/* Chat Modal global */}
+      {chatEfi && (
+        <ChatModal
+          efiName={chatEfi.name}
+          efiColor={chatEfi.color}
+          efiImage={chatEfi.image}
+          isOpen={!!chatEfi}
+          onClose={() => setChatEfi(null)}
+        />
+      )}
     </div>
   );
 }
 
-function EfiCard({ efi }: { efi: (typeof EFIS)[0] }) {
+function EfiCard({ efi, onChat }: { efi: (typeof EFIS)[0]; onChat: () => void }) {
   const cardRef = useRef<HTMLDivElement>(null);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -90,28 +104,28 @@ function EfiCard({ efi }: { efi: (typeof EFIS)[0] }) {
   };
 
   return (
-    <Link href={`/efis/${efi.slug}`}>
+    <div
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      className="group relative rounded-2xl overflow-hidden border border-white/8 transition-all duration-300"
+      style={{
+        background: "rgba(255,255,255,0.03)",
+        boxShadow: `0 0 0 1px rgba(255,255,255,0.06) inset`,
+        transformStyle: "preserve-3d",
+        transition: "transform 0.15s ease, box-shadow 0.3s ease",
+      }}
+    >
+      {/* Glow de fondo al hover */}
       <div
-        ref={cardRef}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-        className="group relative cursor-pointer rounded-2xl overflow-hidden border border-white/8 transition-all duration-300"
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl"
         style={{
-          background: "rgba(255,255,255,0.03)",
-          boxShadow: `0 0 0 1px rgba(255,255,255,0.06) inset`,
-          transformStyle: "preserve-3d",
-          transition: "transform 0.15s ease, box-shadow 0.3s ease",
+          background: `radial-gradient(ellipse 80% 60% at 50% 0%, ${efi.glowColor}, transparent 70%)`,
         }}
-      >
-        {/* Glow de fondo al hover */}
-        <div
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl"
-          style={{
-            background: `radial-gradient(ellipse 80% 60% at 50% 0%, ${efi.glowColor}, transparent 70%)`,
-          }}
-        />
+      />
 
-        {/* Imagen del Efi */}
+      {/* Imagen del Efi — clickable hacia el perfil */}
+      <Link href={`/efis/${efi.slug}`} className="block cursor-pointer">
         <div className="relative h-56 overflow-hidden">
           <div
             className="absolute inset-0"
@@ -125,7 +139,7 @@ function EfiCard({ efi }: { efi: (typeof EFIS)[0] }) {
             className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
             style={{ objectPosition: "center 10%" }}
           />
-          {/* Gradiente inferior para integrar con el fondo */}
+          {/* Gradiente inferior */}
           <div
             className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none"
             style={{
@@ -144,9 +158,11 @@ function EfiCard({ efi }: { efi: (typeof EFIS)[0] }) {
             {efi.badges[0]}
           </div>
         </div>
+      </Link>
 
-        {/* Contenido */}
-        <div className="p-5 relative z-10">
+      {/* Contenido */}
+      <div className="p-5 relative z-10">
+        <Link href={`/efis/${efi.slug}`} className="block cursor-pointer">
           <div className="flex items-start justify-between mb-2">
             <div>
               <h3 className="text-xl font-black text-white">{efi.name}</h3>
@@ -199,23 +215,42 @@ function EfiCard({ efi }: { efi: (typeof EFIS)[0] }) {
               </span>
             ))}
           </div>
+        </Link>
 
-          {/* CTA */}
-          <div
-            className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 group-hover:scale-[1.02]"
+        {/* Botones de acción: Ver perfil + Chat */}
+        <div className="flex gap-2">
+          <Link
+            href={`/efis/${efi.slug}`}
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 hover:scale-[1.02]"
             style={{
               background: `linear-gradient(135deg, ${efi.color}22, ${efi.color}11)`,
               border: `1px solid ${efi.color}44`,
               color: efi.color,
             }}
           >
-            Ver perfil completo
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            Ver perfil
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
-          </div>
+          </Link>
+
+          <button
+            onClick={onChat}
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-black text-white transition-all duration-300 hover:scale-[1.02] hover:brightness-110"
+            style={{
+              background: "linear-gradient(135deg, #1a1a2e, #16213e)",
+              border: `1px solid ${efi.color}55`,
+              boxShadow: `0 0 12px ${efi.color}22`,
+              whiteSpace: "nowrap",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            Chatea con {efi.name}
+          </button>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
