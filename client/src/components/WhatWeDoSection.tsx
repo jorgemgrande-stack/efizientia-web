@@ -10,8 +10,9 @@ const services = [
     icon: Upload,
     title: "Sube tus facturas",
     description: "Arrastra tu PDF o foto. Con eso ya podemos empezar a rebajar tu recibo.",
-    cta: "Saber más",
-    href: "#",
+    cta: "Subir factura",
+    href: "https://efizientia.kiwatio.net/widget/estudio-factura?token=6%7CgupGAGbFslNaPLq9Oo7v7dYpmzCTOssQ9YLDooxV44583597",
+    blank: true,
   },
   {
     icon: Search,
@@ -46,7 +47,8 @@ const services = [
     title: "Ahorro medio 32%",
     description: "Hogares y pymes reales. Sin trucos: comparamos y bajamos tu factura.",
     cta: "Empezar ahora",
-    href: "#hero",
+    href: "https://efizientia.kiwatio.net/widget/estudio-factura?token=6%7CgupGAGbFslNaPLq9Oo7v7dYpmzCTOssQ9YLDooxV44583597",
+    blank: true,
     highlight: true,
   },
 ];
@@ -86,6 +88,8 @@ function ServiceCard({ service }: { service: typeof services[0] }) {
       {/* CTA */}
       <a
         href={service.href}
+        target={service.blank ? "_blank" : undefined}
+        rel={service.blank ? "noopener noreferrer" : undefined}
         className="flex items-center gap-1 text-sm font-bold transition-all duration-200 group-hover:gap-2"
         style={{ color: "#e91e8c" }}
       >

@@ -148,7 +148,10 @@ export default function ProcessSection() {
               <p className="text-white/50 text-sm mb-4" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
                 Pulsa para que ocurra la magia en tu factura de la luz
               </p>
-              <button
+              <a
+                href="https://efizientia.kiwatio.net/widget/estudio-factura?token=6%7CgupGAGbFslNaPLq9Oo7v7dYpmzCTOssQ9YLDooxV44583597"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-20 h-20 rounded-full flex items-center justify-center text-white font-black text-2xl transition-all duration-300 hover:scale-110 shadow-lg pulse-glow"
                 style={{
                   backgroundColor: "#e91e8c",
@@ -156,7 +159,7 @@ export default function ProcessSection() {
                 }}
               >
                 <Zap size={32} />
-              </button>
+              </a>
             </div>
           </div>
         </div>

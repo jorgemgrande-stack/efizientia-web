@@ -42,7 +42,9 @@ export default function CtaBanner() {
               permanencias, sin letra pequeña.
             </p>
             <a
-              href="#hero"
+              href="https://efizientia.kiwatio.net/widget/estudio-factura?token=6%7CgupGAGbFslNaPLq9Oo7v7dYpmzCTOssQ9YLDooxV44583597"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 font-black px-6 py-4 rounded-lg transition-all duration-200 hover:scale-105"
               style={{
                 border: "2px solid #e91e8c",

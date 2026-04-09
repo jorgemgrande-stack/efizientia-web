@@ -51,7 +51,9 @@ export default function BenefitsSection() {
             </ul>
 
             <a
-              href="#hero"
+              href="https://efizientia.kiwatio.net/widget/estudio-factura?token=6%7CgupGAGbFslNaPLq9Oo7v7dYpmzCTOssQ9YLDooxV44583597"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-white font-black px-6 py-4 rounded-lg transition-all duration-200 hover:scale-105"
               style={{
                 backgroundColor: "#e91e8c",
@@ -135,7 +137,9 @@ export default function BenefitsSection() {
               Descubre cómo reducimos tu factura sin esfuerzo.
             </p>
             <a
-              href="#hero"
+              href="https://efizientia.kiwatio.net/widget/estudio-factura?token=6%7CgupGAGbFslNaPLq9Oo7v7dYpmzCTOssQ9YLDooxV44583597"
+              target="_blank"
+              rel="noopener noreferrer"
               className="mt-4 inline-flex items-center gap-2 text-sm font-bold transition-colors"
               style={{ color: "#e91e8c" }}
             >

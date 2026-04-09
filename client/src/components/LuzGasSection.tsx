@@ -67,7 +67,9 @@ export function LuzSection() {
             </div>
 
             <a
-              href="#hero"
+              href="https://efizientia.kiwatio.net/widget/estudio-factura?token=6%7CgupGAGbFslNaPLq9Oo7v7dYpmzCTOssQ9YLDooxV44583597"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-white font-black px-6 py-4 rounded-lg transition-all duration-200 hover:scale-105"
               style={{
                 backgroundColor: "#e91e8c",
@@ -205,17 +207,16 @@ export function GasSection() {
                 </div>
               ))}
             </div>
-
             <a
-              href="#hero"
+              href="https://efizientia.kiwatio.net/widget/estudio-factura?token=6%7CgupGAGbFslNaPLq9Oo7v7dYpmzCTOssQ9YLDooxV44583597"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-white font-black px-6 py-4 rounded-lg transition-all duration-200 hover:scale-105"
               style={{
                 backgroundColor: "#e91e8c",
                 fontFamily: "'Montserrat', sans-serif",
                 boxShadow: "0 4px 20px rgba(233,30,140,0.3)",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#f72585")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#e91e8c")}
             >
               <Flame size={18} />
               Encender el ahorro de gas

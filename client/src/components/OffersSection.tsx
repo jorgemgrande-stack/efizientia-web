@@ -107,7 +107,9 @@ function OfferCard({ offer }: { offer: typeof offers[0] }) {
 
       {/* CTA */}
       <a
-        href="#hero"
+        href="https://efizientia.kiwatio.net/widget/estudio-factura?token=6%7CgupGAGbFslNaPLq9Oo7v7dYpmzCTOssQ9YLDooxV44583597"
+        target="_blank"
+        rel="noopener noreferrer"
         className="mt-auto flex items-center justify-center gap-2 py-3 rounded-lg text-white font-black text-sm transition-all duration-200"
         style={{
           border: "2px solid #e91e8c",
