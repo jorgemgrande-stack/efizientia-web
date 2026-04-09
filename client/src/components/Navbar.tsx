@@ -10,10 +10,10 @@ import { useState, useEffect } from "react";
 import { Menu, X, Phone, MessageCircle, Facebook, Instagram } from "lucide-react";
 
 const navLinks = [
-  { label: "Luz", href: "#luz" },
-  { label: "Gas", href: "#gas" },
-  { label: "Efis", href: "#efis" },
-  { label: "Humanos", href: "#humanos" },
+  { label: "Luz", href: "/#luz" },
+  { label: "Gas", href: "/#gas" },
+  { label: "Los Efis", href: "/efis" },
+  { label: "Humanos", href: "/#humanos" },
 ];
 
 export default function Navbar() {
