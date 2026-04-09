@@ -37,26 +37,18 @@ export default function Navbar() {
         <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <a href="/" className="flex items-center gap-2 flex-shrink-0">
-              <div className="flex items-center">
-                <span
-                  style={{ fontFamily: "'Montserrat', sans-serif" }}
-                  className="text-2xl font-black text-white tracking-tight"
-                >
-                  EFI
-                </span>
-                <span
-                  style={{ fontFamily: "'Montserrat', sans-serif", color: "#e91e8c" }}
-                  className="text-2xl font-black tracking-tight"
-                >
-                  ZIENTIA
-                </span>
-              </div>
-              {/* Leaf icon */}
-              <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="20" cy="20" r="18" fill="none" stroke="#4caf50" strokeWidth="1.5" strokeDasharray="3 2" />
-                <path d="M20 8 C14 12 10 18 12 26 C16 24 22 20 24 14 C26 20 22 28 16 32 C20 34 26 30 28 24 C32 18 28 10 20 8Z" fill="#4caf50" />
-              </svg>
+            <a href="/" className="flex items-center flex-shrink-0">
+              {/* mix-blend-mode: screen hace que el fondo blanco desaparezca sobre fondo oscuro */}
+              <img
+                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/efizientia-logo_cee443ca.png"
+                alt="Efizientia"
+                style={{
+                  height: "44px",
+                  width: "auto",
+                  objectFit: "contain",
+                  mixBlendMode: "screen",
+                }}
+              />
             </a>
 
             {/* Desktop Nav */}

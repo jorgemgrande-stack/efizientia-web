@@ -42,25 +42,17 @@ export default function Footer() {
         <div className="grid md:grid-cols-3 gap-10 mb-10">
           {/* Logo & Description */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="flex items-center">
-                <span
-                  style={{ fontFamily: "'Montserrat', sans-serif", color: "white" }}
-                  className="text-2xl font-black"
-                >
-                  EFI
-                </span>
-                <span
-                  style={{ fontFamily: "'Montserrat', sans-serif", color: "#e91e8c" }}
-                  className="text-2xl font-black"
-                >
-                  ZIENTIA
-                </span>
-              </div>
-              <svg width="24" height="24" viewBox="0 0 40 40" fill="none">
-                <circle cx="20" cy="20" r="18" fill="none" stroke="#4caf50" strokeWidth="1.5" strokeDasharray="3 2" />
-                <path d="M20 8 C14 12 10 18 12 26 C16 24 22 20 24 14 C26 20 22 28 16 32 C20 34 26 30 28 24 C32 18 28 10 20 8Z" fill="#4caf50" />
-              </svg>
+            <div className="mb-4">
+              <img
+                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/efizientia-logo_cee443ca.png"
+                alt="Efizientia"
+                style={{
+                  height: "40px",
+                  width: "auto",
+                  objectFit: "contain",
+                  mixBlendMode: "screen",
+                }}
+              />
             </div>
             <p className="text-white/50 text-sm leading-relaxed" style={{ fontFamily: "'Nunito Sans', sans-serif" }}>
               Hackeamos el mercado eléctrico para darte siempre el mejor precio. Sin rodeos, sin
