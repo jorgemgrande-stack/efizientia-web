@@ -1,9 +1,14 @@
 /**
- * Efizientia · Página de perfil individual /humanos/:slug
- * Design: Dark Tech, magenta #e91e8c, fondo negro #0a0a0a
- * Replicando fielmente el diseño de efizientia.es/humanos-team-faustinolobato/
- * Secciones: hero (foto + stats + CTA), top compañías, formulario de contacto,
- *            en qué te ayudo, testimonios, cómo trabajamos.
+ * Efizientia · Perfil individual de asesor /humanos/:slug
+ * Design: Dark Tech — fondo #0a0a0a, magenta #e91e8c, Montserrat/Nunito Sans
+ *
+ * Secciones:
+ *  1. Hero: foto + info + stats + CTAs
+ *  2. Widget Kiwatio (iframe, URL personalizable por asesor) + Ranking vivo
+ *  3. En qué te ayudo + Testimonios (pool aleatorio) + Cómo trabajamos
+ *  4. Formulario WhatsApp
+ *  5. Sobre el asesor (condicional)
+ *  6. Otros asesores del equipo
  */
 import { useParams, Link } from "wouter";
 import { useState, useEffect, useRef } from "react";
@@ -16,80 +21,190 @@ import {
 import { HUMANOS, WIDGET_URL, WHATSAPP_BASE, PHONE, EMAIL } from "@/data/humanos";
 import type { HumanoData } from "@/data/humanos";
 
+// ── Datos de respaldo (para perfiles recién creados sin contenido) ────────────
+
+const DEFAULT_COMPANIES: HumanoData["topCompanies"] = [
+  { pos: 1,  name: "Audax",           color: "#e91e8c" },
+  { pos: 2,  name: "Repsol Energía",  color: "#ff6b35" },
+  { pos: 3,  name: "Naturgy",         color: "#39d353" },
+  { pos: 4,  name: "Iberdrola",       color: "#3b82f6" },
+  { pos: 5,  name: "Holaluz",         color: "#a855f7" },
+  { pos: 6,  name: "TotalEnergies",   color: "#f59e0b" },
+  { pos: 7,  name: "Endesa",          color: "#ec4899" },
+  { pos: 8,  name: "Lucera",          color: "#06b6d4" },
+  { pos: 9,  name: "Aldro",           color: "#84cc16" },
+  { pos: 10, name: "Acciona",         color: "#f97316" },
+];
+
+const DEFAULT_SERVICES = [
+  "Optimización de potencia contratada (P1–P6)",
+  "Comparativa y cambio de tarifa eléctrica",
+  "Gestión del cambio de compañía sin cortes",
+  "Revisión y auditoría de facturas de luz y gas",
+  "Altas, cambios de titular y domiciliación SEPA",
+  "Compensación de excedentes de energía solar",
+];
+
+const DEFAULT_PROCESS = [
+  "Sube tu factura o déjame tus datos de contacto.",
+  "Analizo tu consumo, potencias y tarifa actual.",
+  "Te presento la mejor alternativa con el ahorro estimado.",
+  "Gestionamos el cambio: firma digital, sin papeleo.",
+];
+
+const TESTIMONIAL_POOL: HumanoData["testimonials"] = [
+  { text: "Bajé mi factura un 34% sin cambiar nada en casa. Lo vi en papel y no me lo creía.", author: "Patricia G.", detail: "Vivienda 4,6 kW · Sevilla" },
+  { text: "En 24 h tenía la oferta firmada y las potencias ajustadas. Servicio impresionante.", author: "Óscar M.", detail: "Tienda de barrio · Cádiz" },
+  { text: "Detectó un error de lectura que llevaba 2 años sin que nadie lo viera. Me devolvieron 340 €.", author: "Laura C.", detail: "Comunidad de vecinos · Jerez" },
+  { text: "La potencia que tenía contratada era el doble de la que necesitaba. ¿Cómo nadie me lo había dicho?", author: "Javier M.", detail: "Piso en alquiler · Málaga" },
+  { text: "Cambié de comercializadora sin cortes, sin papeles y ahorro 47 € al mes. ¡Recomendadísimo!", author: "Carmen R.", detail: "Familia · Jerez" },
+  { text: "Me explicó la factura en 10 minutos. Por fin entiendo qué estoy pagando exactamente.", author: "Manolo P.", detail: "Bar · Sanlúcar" },
+  { text: "Tenía el peaje RL.2 cuando me correspondía el RL.1. Tres años pagando de más sin saberlo.", author: "Carlos M.", detail: "Comunidad · El Puerto" },
+  { text: "El lunes subí la factura y el miércoles ya tenía el contrato nuevo activo. Sin moverte del sofá.", author: "Susana F.", detail: "Hogar · Huelva" },
+  { text: "Gestionó el cambio de titular del piso nuevo sin un solo problema. En tres días, resuelto.", author: "Roberto P.", detail: "Piso nuevo · Cádiz" },
+  { text: "Me hicieron un estudio gratuito y ahorramos un 28 % desde el primer mes. Imposible no recomendar.", author: "Ana B.", detail: "Chalet · El Puerto" },
+  { text: "Seis trabajadores, nave industrial. Reducimos la eléctrica un 31 % optimizando potencias P1–P3.", author: "Empresa Metalúrgica J.", detail: "Nave industrial · Cádiz" },
+  { text: "Llevaba 5 años con la misma compañía sin mirarlo. Me ahorraron 380 € al año con un cambio de tarifa.", author: "Francisco L.", detail: "Piso · Algeciras" },
+];
+
+// ── Normalización de perfil API ───────────────────────────────────────────────
+
 function normalizeApiProfile(p: Record<string, unknown>): HumanoData {
   return {
-    slug: String(p.slug ?? ""),
-    name: String(p.name ?? p.display_name ?? ""),
-    fullName: String(p.fullName ?? p.display_name ?? ""),
-    role: String(p.role ?? ""),
-    tagline: String(p.tagline ?? ""),
-    description: String(p.description ?? p.about_text ?? ""),
-    image: String(p.image ?? p.photo_url ?? ""),
-    tags: Array.isArray(p.tags) ? p.tags.map(String) : [],
-    status: (["online", "busy", "offline"].includes(String(p.status)) ? p.status : "online") as HumanoData["status"],
-    schedule: String(p.schedule ?? ""),
-    stats: Array.isArray(p.stats) ? (p.stats as HumanoData["stats"]) : [],
-    services: Array.isArray(p.services) ? p.services.map(String) : [],
-    testimonials: Array.isArray(p.testimonials) ? (p.testimonials as HumanoData["testimonials"]) : [],
-    process: Array.isArray(p.process) ? p.process.map(String) : [],
-    topCompanies: Array.isArray(p.topCompanies) ? (p.topCompanies as HumanoData["topCompanies"]) : [],
-    whatsappMsg: String(p.whatsappMsg ?? "Hola, me gustaría que me ayudaras con mi factura de energía."),
+    slug:          String(p.slug ?? ""),
+    name:          String(p.name ?? p.display_name ?? ""),
+    fullName:      String(p.fullName ?? p.display_name ?? ""),
+    role:          String(p.role ?? ""),
+    tagline:       String(p.tagline ?? ""),
+    description:   String(p.description ?? p.about_text ?? ""),
+    image:         String(p.image ?? p.photo_url ?? ""),
+    tags:          Array.isArray(p.tags) ? p.tags.map(String) : [],
+    status:        (["online", "busy", "offline"].includes(String(p.status)) ? p.status : "online") as HumanoData["status"],
+    schedule:      String(p.schedule ?? ""),
+    stats:         Array.isArray(p.stats) ? (p.stats as HumanoData["stats"]) : [],
+    services:      Array.isArray(p.services) ? p.services.map(String) : [],
+    testimonials:  Array.isArray(p.testimonials) ? (p.testimonials as HumanoData["testimonials"]) : [],
+    process:       Array.isArray(p.process) ? p.process.map(String) : [],
+    topCompanies:  Array.isArray(p.topCompanies) ? (p.topCompanies as HumanoData["topCompanies"]) : [],
+    whatsappMsg:   String(p.whatsappMsg ?? "Hola, me gustaría que me ayudaras con mi factura de energía."),
+    invoiceCtaUrl: String(p.invoiceCtaUrl ?? p.invoice_cta_url ?? "") || undefined,
   };
 }
 
-// Colores por índice para los avatares placeholder
-const AVATAR_COLORS = [
-  "#e91e8c", "#7b2ff7", "#f59e0b", "#39d353", "#3b82f6", "#ec4899",
-];
+// ── Colores de avatar placeholder ────────────────────────────────────────────
+const AVATAR_COLORS = ["#e91e8c", "#7b2ff7", "#f59e0b", "#39d353", "#3b82f6", "#ec4899"];
 
-function StatusDot({ status }: { status: "online" | "busy" | "offline" }) {
+// ── StatusDot ─────────────────────────────────────────────────────────────────
+function StatusDot({ status }: { status: HumanoData["status"] }) {
   const map = {
-    online: { color: "#39d353", label: "Online" },
-    busy: { color: "#f59e0b", label: "Respondiendo en breve" },
+    online:  { color: "#39d353", label: "Online" },
+    busy:    { color: "#f59e0b", label: "Respondiendo en breve" },
     offline: { color: "#6b7280", label: "Fuera de horario" },
   };
   const s = map[status];
   return (
     <div className="flex items-center gap-2">
-      <span
-        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-        style={{
-          background: s.color,
-          boxShadow: `0 0 8px ${s.color}`,
-        }}
-      />
-      <span className="text-sm font-semibold" style={{ color: s.color }}>
-        {s.label}
+      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: s.color, boxShadow: `0 0 8px ${s.color}` }} />
+      <span className="text-sm font-semibold" style={{ color: s.color }}>{s.label}</span>
+      <span className="text-white/40 text-sm ml-1">
+        · {status === "online" ? "08:00–20:00" : status === "busy" ? "10:00–20:00" : ""}
       </span>
-      <span className="text-white/40 text-sm ml-1">· {status === "online" ? "08:00–20:00" : "10:00–20:00"}</span>
     </div>
   );
 }
 
-// Formulario de contacto que abre WhatsApp
-function ContactForm({ humano }: { humano: typeof HUMANOS[0] }) {
+// ── LiveRanking — ranking animado ─────────────────────────────────────────────
+function LiveRanking({ initialCompanies }: { initialCompanies: HumanoData["topCompanies"] }) {
+  const source = initialCompanies.length >= 5 ? initialCompanies : DEFAULT_COMPANIES;
+  const [list, setList] = useState(() => source.map((c, i) => ({ ...c, pos: i + 1 })));
+  const [rising, setRising] = useState<string | null>(null);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = () => {
+      const delay = 2200 + Math.random() * 1800;
+      timer = setTimeout(() => {
+        setList((prev) => {
+          const arr = [...prev];
+          const hi = Math.min(arr.length - 2, 8); // solo posiciones 3–9 se mueven
+          if (hi < 2) return prev;
+          const i = 2 + Math.floor(Math.random() * (hi - 2 + 1));
+          const risingName = arr[i + 1]?.name;
+          if (!risingName) return prev;
+          setRising(risingName);
+          setTimeout(() => setRising(null), 1800);
+          [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+          return arr.map((c, idx) => ({ ...c, pos: idx + 1 }));
+        });
+        tick();
+      }, delay);
+    };
+    tick();
+    return () => clearTimeout(timer);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div className="space-y-2.5">
+      {list.map((c) => {
+        const isRising = c.name === rising;
+        const barPct = Math.max(22, 100 - (c.pos - 1) * 7.8);
+        return (
+          <div key={c.name} className="flex items-center gap-3">
+            <div
+              className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0"
+              style={{
+                background: c.pos === 1 ? c.color : isRising ? `${c.color}30` : "rgba(255,255,255,0.08)",
+                color: c.pos === 1 ? "#fff" : isRising ? c.color : "rgba(255,255,255,0.5)",
+                transition: "all 0.4s ease",
+              }}
+            >
+              {c.pos}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1 mb-1">
+                <span className="text-sm font-semibold text-white truncate flex-1">{c.name}</span>
+                {isRising && <span className="text-xs font-black flex-shrink-0" style={{ color: "#39d353" }}>▲</span>}
+              </div>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+                <div
+                  className="h-full rounded-full"
+                  style={{ width: `${barPct}%`, background: c.color, transition: "width 0.8s ease" }}
+                />
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── ContactForm (WhatsApp) ────────────────────────────────────────────────────
+function ContactForm({ humano }: { humano: HumanoData }) {
   const [form, setForm] = useState({ nombre: "", telefono: "", email: "", mensaje: "", privacidad: false });
   const [sent, setSent] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.privacidad) return;
-    const msg = `Hola ${humano.name}, soy ${form.nombre}. ${form.mensaje || humano.whatsappMsg} Mi teléfono: ${form.telefono}. Mi email: ${form.email}.`;
+    const msg = `Hola ${humano.name}, soy ${form.nombre}. ${form.mensaje || humano.whatsappMsg} Tel: ${form.telefono}. Email: ${form.email}.`;
     window.open(`${WHATSAPP_BASE}?text=${encodeURIComponent(msg)}`, "_blank");
     setSent(true);
   };
 
+  const inputStyle: React.CSSProperties = {
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.12)",
+  };
+  const inputCls = "w-full px-4 py-3 rounded-xl text-white text-sm outline-none transition-all";
+
   if (sent) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-10">
         <CheckCircle size={48} className="mx-auto mb-4" style={{ color: "#39d353" }} />
         <h3 className="text-xl font-bold text-white mb-2">¡Mensaje enviado!</h3>
-        <p className="text-white/60">Te hemos abierto WhatsApp. {humano.name} te responderá en breve.</p>
-        <button
-          onClick={() => setSent(false)}
-          className="mt-6 text-sm font-semibold underline"
-          style={{ color: "#e91e8c" }}
-        >
+        <p className="text-white/60">{humano.name} te responderá en breve por WhatsApp.</p>
+        <button onClick={() => setSent(false)} className="mt-5 text-sm font-semibold underline" style={{ color: "#e91e8c" }}>
           Enviar otro mensaje
         </button>
       </div>
@@ -98,184 +213,83 @@ function ContactForm({ humano }: { humano: typeof HUMANOS[0] }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h3 className="text-xl font-black text-white mb-6" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+      <h3 className="text-xl font-black text-white mb-5" style={{ fontFamily: "'Montserrat', sans-serif" }}>
         Déjame tus datos y te atiendo por WhatsApp
       </h3>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">Nombre y apellidos</label>
-          <input
-            type="text"
-            placeholder="Tu nombre"
-            value={form.nombre}
+          <input type="text" placeholder="Tu nombre" required value={form.nombre}
             onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-            required
-            className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none transition-all"
-            style={{
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.12)",
-            }}
+            className={inputCls} style={inputStyle}
             onFocus={(e) => (e.target.style.borderColor = "#e91e8c")}
-            onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.12)")}
-          />
+            onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.12)")} />
         </div>
         <div>
           <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">Teléfono</label>
-          <input
-            type="tel"
-            placeholder="+34 6XX XXX XXX"
-            value={form.telefono}
+          <input type="tel" placeholder="+34 6XX XXX XXX" value={form.telefono}
             onChange={(e) => setForm({ ...form, telefono: e.target.value })}
-            className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none transition-all"
-            style={{
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.12)",
-            }}
+            className={inputCls} style={inputStyle}
             onFocus={(e) => (e.target.style.borderColor = "#e91e8c")}
-            onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.12)")}
-          />
+            onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.12)")} />
         </div>
       </div>
       <div>
         <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">Email</label>
-        <input
-          type="email"
-          placeholder="tucorreo@dominio.com"
-          value={form.email}
+        <input type="email" placeholder="tucorreo@dominio.com" value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })}
-          className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none transition-all"
-          style={{
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.12)",
-          }}
+          className={inputCls} style={inputStyle}
           onFocus={(e) => (e.target.style.borderColor = "#e91e8c")}
-          onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.12)")}
-        />
+          onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.12)")} />
       </div>
       <div>
         <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">Mensaje</label>
-        <textarea
-          placeholder="Cuéntame qué necesitas (luz, gas, potencia, RL…)"
-          value={form.mensaje}
-          onChange={(e) => setForm({ ...form, mensaje: e.target.value })}
-          rows={3}
+        <textarea placeholder="Cuéntame qué necesitas (luz, gas, potencia…)" rows={3}
+          value={form.mensaje} onChange={(e) => setForm({ ...form, mensaje: e.target.value })}
           className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none transition-all resize-none"
-          style={{
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.12)",
-          }}
+          style={inputStyle}
           onFocus={(e) => (e.target.style.borderColor = "#e91e8c")}
-          onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.12)")}
-        />
+          onBlur={(e) => (e.target.style.borderColor = "rgba(255,255,255,0.12)")} />
       </div>
       <div className="flex items-start gap-3">
-        <input
-          type="checkbox"
-          id="privacidad"
-          checked={form.privacidad}
+        <input type="checkbox" id="privacidad" required checked={form.privacidad}
           onChange={(e) => setForm({ ...form, privacidad: e.target.checked })}
-          className="mt-0.5 w-4 h-4 accent-pink-500 flex-shrink-0"
-          required
-        />
+          className="mt-0.5 w-4 h-4 accent-pink-500 flex-shrink-0" />
         <label htmlFor="privacidad" className="text-xs text-white/50 leading-relaxed">
           Acepto la{" "}
           <Link href="/privacidad">
             <span className="underline cursor-pointer" style={{ color: "#e91e8c" }}>política de privacidad</span>
           </Link>
-          . Tus datos se usarán solo para atender tu solicitud por WhatsApp.
+          . Tus datos se usarán solo para atender tu solicitud.
         </label>
       </div>
-      <div className="grid grid-cols-2 gap-3 pt-2">
-        <button
-          type="submit"
-          className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:scale-105"
-          style={{ background: "#25D366" }}
-        >
-          <MessageCircle size={16} />
-          Enviar por WhatsApp
-        </button>
-        <a
-          href={WIDGET_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:scale-105"
-          style={{
-            background: "linear-gradient(135deg, #e91e8c, #7b2ff7)",
-            boxShadow: "0 0 20px rgba(233,30,140,0.3)",
-          }}
-        >
-          <Zap size={16} />
-          Subir factura ahora
-        </a>
-      </div>
+      <button
+        type="submit"
+        className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:scale-[1.02]"
+        style={{ background: "#25D366" }}
+      >
+        <MessageCircle size={16} />
+        Enviar por WhatsApp
+      </button>
     </form>
   );
 }
 
-// Barras animadas del ranking de compañías
-function CompanyBar({ company, delay }: { company: { pos: number; name: string; color: string }; delay: number }) {
-  const [width, setWidth] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setTimeout(() => {
-            setWidth(100 - (company.pos - 1) * 5);
-          }, delay);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.3 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [company.pos, delay]);
-
-  return (
-    <div ref={ref} className="flex items-center gap-3 py-2">
-      <span
-        className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0"
-        style={{ background: company.pos === 1 ? company.color : "rgba(255,255,255,0.08)", color: company.pos === 1 ? "#fff" : "rgba(255,255,255,0.5)" }}
-      >
-        {company.pos}
-      </span>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-white text-sm font-semibold truncate">{company.name}</span>
-        </div>
-        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
-          <div
-            className="h-full rounded-full transition-all duration-700 ease-out"
-            style={{ width: `${width}%`, background: company.color }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
+// ── Página principal ──────────────────────────────────────────────────────────
 export default function HumanoProfile() {
   const params = useParams<{ slug: string }>();
-  // undefined = cargando, null = no encontrado, HumanoData = ok
   const [humano, setHumano] = useState<HumanoData | null | undefined>(
     HUMANOS.find((h) => h.slug === params.slug) ?? undefined
   );
 
   useEffect(() => {
     fetch(`/api/profiles/${params.slug}`)
-      .then((r) => {
-        if (!r.ok) throw new Error("not found");
-        return r.json();
-      })
+      .then((r) => { if (!r.ok) throw new Error("not found"); return r.json(); })
       .then((data) => setHumano(normalizeApiProfile(data as Record<string, unknown>)))
-      .catch(() => {
-        // Si la API falla, usar el estático (ya está en el estado inicial) o marcar como null
-        setHumano((prev) => prev ?? null);
-      });
+      .catch(() => setHumano((prev) => prev ?? null));
   }, [params.slug]);
 
+  // ── Estados de carga / no encontrado ──
   if (humano === undefined) {
     return (
       <div style={{ background: "#0a0a0a", minHeight: "100vh" }}>
@@ -298,12 +312,9 @@ export default function HumanoProfile() {
           <h1 className="text-3xl font-black text-white mb-4">Asesor no encontrado</h1>
           <p className="text-white/50 mb-8">El perfil que buscas no existe o ha cambiado de URL.</p>
           <Link href="/humanos">
-            <span
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-white cursor-pointer"
-              style={{ background: "linear-gradient(135deg, #e91e8c, #7b2ff7)" }}
-            >
-              <ArrowLeft size={16} />
-              Ver todos los asesores
+            <span className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-white cursor-pointer"
+              style={{ background: "linear-gradient(135deg, #e91e8c, #7b2ff7)" }}>
+              <ArrowLeft size={16} />Ver todos los asesores
             </span>
           </Link>
         </div>
@@ -312,55 +323,59 @@ export default function HumanoProfile() {
     );
   }
 
+  // ── Datos con fallback ──
   const humanoIdx = HUMANOS.findIndex((h) => h.slug === humano.slug);
   const avatarColor = AVATAR_COLORS[Math.max(humanoIdx, 0) % AVATAR_COLORS.length];
   const initials = humano.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
   const whatsappUrl = `${WHATSAPP_BASE}?text=${encodeURIComponent(humano.whatsappMsg)}`;
+  const widgetUrl = humano.invoiceCtaUrl || WIDGET_URL;
+
+  // Testimonios: usa los propios si hay ≥2, si no aleatorios del pool
+  const [testimonials] = useState<HumanoData["testimonials"]>(() => {
+    if (humano.testimonials.length >= 2) return humano.testimonials;
+    return [...TESTIMONIAL_POOL].sort(() => Math.random() - 0.5).slice(0, 3);
+  });
+
+  const services = humano.services.length >= 2 ? humano.services : DEFAULT_SERVICES;
+  const process  = humano.process.length >= 2  ? humano.process  : DEFAULT_PROCESS;
 
   return (
     <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'Nunito Sans', sans-serif" }}>
       <Navbar />
 
-      {/* ── HERO ─────────────────────────────────────────────────────── */}
+      {/* ══ 1. HERO ════════════════════════════════════════════════════════ */}
       <section
-        className="relative pt-28 pb-12 overflow-hidden"
+        className="relative pt-28 pb-14 overflow-hidden"
         style={{ background: "linear-gradient(135deg, #0a0a0a 0%, #0f0520 60%, #0a0a0a 100%)" }}
       >
-        {/* Glow */}
         <div
-          className="absolute top-0 left-0 w-full h-full pointer-events-none"
+          className="absolute inset-0 pointer-events-none"
           style={{ background: "radial-gradient(ellipse at 30% 50%, rgba(233,30,140,0.08) 0%, transparent 60%)" }}
         />
-
         <div className="container mx-auto px-4 lg:px-8 max-w-7xl relative z-10">
-          {/* Breadcrumb */}
           <Link href="/humanos">
             <span className="inline-flex items-center gap-2 text-sm text-white/40 hover:text-white/70 transition-colors cursor-pointer mb-8">
-              <ArrowLeft size={14} />
-              Todos los asesores
+              <ArrowLeft size={14} />Todos los asesores
             </span>
           </Link>
 
           <div className="grid lg:grid-cols-2 gap-12 items-start">
-            {/* Columna izquierda: info */}
+            {/* Columna izq: info */}
             <div>
               <div
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold mb-6 uppercase tracking-widest"
                 style={{ background: "rgba(233,30,140,0.12)", border: "1px solid rgba(233,30,140,0.25)", color: "#e91e8c" }}
               >
-                Asesoramiento Humano
+                Asesor Energético
               </div>
 
-              <h1
-                className="text-4xl md:text-5xl font-black text-white mb-3 leading-tight"
-                style={{ fontFamily: "'Montserrat', sans-serif" }}
-              >
-                {humano.fullName}
+              <h1 className="text-4xl md:text-5xl font-black text-white mb-2 leading-tight" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                {humano.fullName || humano.name}
               </h1>
-              <p className="text-white/50 text-lg mb-4">{humano.role}</p>
-              <p className="text-white/70 text-base leading-relaxed mb-6">{humano.tagline}</p>
+              {humano.role && <p className="text-white/50 text-lg mb-3">{humano.role}</p>}
+              {humano.tagline && <p className="text-white/70 text-base leading-relaxed mb-6">{humano.tagline}</p>}
 
-              {/* Estado online */}
+              {/* Estado */}
               <div
                 className="inline-flex items-center gap-3 px-4 py-2.5 rounded-xl mb-6"
                 style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
@@ -369,214 +384,193 @@ export default function HumanoProfile() {
               </div>
 
               {/* Stats */}
-              <div className="flex flex-wrap gap-3 mb-8">
-                {humano.stats.map((stat) => (
-                  <div
-                    key={stat.label}
-                    className="px-4 py-2.5 rounded-xl"
-                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
-                  >
-                    <div className="text-lg font-black" style={{ color: "#e91e8c" }}>{stat.value}</div>
-                    <div className="text-xs text-white/50">{stat.label}</div>
-                  </div>
-                ))}
-              </div>
+              {humano.stats.length > 0 && (
+                <div className="flex flex-wrap gap-3 mb-8">
+                  {humano.stats.map((stat) => (
+                    <div key={stat.label} className="px-4 py-2.5 rounded-xl"
+                      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                      <div className="text-lg font-black" style={{ color: "#e91e8c" }}>{stat.value}</div>
+                      <div className="text-xs text-white/50">{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-              {/* Botones de acción */}
+              {/* CTAs */}
               <div className="flex flex-wrap gap-3 mb-4">
                 <a
-                  href={WIDGET_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="#factura"
                   className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:scale-105"
-                  style={{
-                    background: "linear-gradient(135deg, #e91e8c, #7b2ff7)",
-                    boxShadow: "0 0 24px rgba(233,30,140,0.35)",
-                  }}
+                  style={{ background: "linear-gradient(135deg, #e91e8c, #7b2ff7)", boxShadow: "0 0 24px rgba(233,30,140,0.35)" }}
                 >
-                  <Zap size={16} />
-                  Subir factura
+                  <Zap size={16} />Subir factura
                 </a>
-                <a
-                  href={whatsappUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:scale-105"
-                  style={{ background: "#25D366" }}
-                >
-                  <MessageCircle size={16} />
-                  WhatsApp
+                  style={{ background: "#25D366" }}>
+                  <MessageCircle size={16} />WhatsApp
                 </a>
-                <a
-                  href={PHONE}
+                <a href={PHONE}
                   className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:bg-white/10"
-                  style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}
-                >
-                  <Phone size={16} />
-                  Llamar
+                  style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                  <Phone size={16} />Llamar
                 </a>
-                <a
-                  href={EMAIL}
+                <a href={EMAIL}
                   className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:bg-white/10"
-                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
-                >
-                  <Mail size={16} />
-                  Email
+                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  <Mail size={16} />Email
                 </a>
               </div>
-              <p className="text-white/30 text-xs">
-                Te atiendo de {humano.schedule}. Urgencias por WhatsApp.
-              </p>
+              {humano.schedule && (
+                <p className="text-white/30 text-xs">Te atiendo de {humano.schedule}. Urgencias por WhatsApp.</p>
+              )}
             </div>
 
-            {/* Columna derecha: foto */}
+            {/* Columna der: foto */}
             <div className="relative">
-              <div
-                className="rounded-2xl overflow-hidden"
-                style={{
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  boxShadow: "0 0 60px rgba(233,30,140,0.15)",
-                }}
-              >
-                <img
-                  src={humano.image}
-                  alt={humano.name}
-                  className="w-full object-cover object-top"
-                  style={{ maxHeight: "520px" }}
-                  onError={(e) => {
-                    const target = e.currentTarget;
-                    target.style.display = "none";
-                    const fallback = target.nextElementSibling as HTMLElement;
-                    if (fallback) fallback.style.display = "flex";
-                  }}
-                />
-                {/* Fallback avatar */}
-                <div
-                  className="w-full hidden items-center justify-center py-24"
-                  style={{ background: `linear-gradient(135deg, ${avatarColor}20, rgba(0,0,0,0.8))` }}
-                >
-                  <div
-                    className="w-40 h-40 rounded-full flex items-center justify-center text-6xl font-black text-white"
-                    style={{ background: `linear-gradient(135deg, ${avatarColor}, ${avatarColor}80)` }}
-                  >
-                    {initials}
+              <div className="rounded-2xl overflow-hidden"
+                style={{ border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 0 60px rgba(233,30,140,0.15)" }}>
+                {humano.image ? (
+                  <>
+                    <img src={humano.image} alt={humano.name}
+                      className="w-full object-cover object-top" style={{ maxHeight: 520 }}
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                        const fb = e.currentTarget.nextElementSibling as HTMLElement;
+                        if (fb) fb.style.display = "flex";
+                      }} />
+                    <div className="w-full hidden items-center justify-center py-24"
+                      style={{ background: `linear-gradient(135deg, ${avatarColor}20, rgba(0,0,0,0.8))` }}>
+                      <div className="w-40 h-40 rounded-full flex items-center justify-center text-6xl font-black text-white"
+                        style={{ background: `linear-gradient(135deg, ${avatarColor}, ${avatarColor}80)` }}>
+                        {initials}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center justify-center py-24"
+                    style={{ background: `linear-gradient(135deg, ${avatarColor}20, rgba(0,0,0,0.8))` }}>
+                    <div className="w-40 h-40 rounded-full flex items-center justify-center text-6xl font-black text-white"
+                      style={{ background: `linear-gradient(135deg, ${avatarColor}, ${avatarColor}80)` }}>
+                      {initials}
+                    </div>
                   </div>
-                </div>
-              </div>
-
-              {/* QR decorativo */}
-              <div
-                className="absolute -bottom-4 -right-4 px-4 py-3 rounded-xl text-center"
-                style={{
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  backdropFilter: "blur(12px)",
-                }}
-              >
-                <div className="text-xs text-white/40 mb-1">Escanéame</div>
-                <div className="text-xs font-bold" style={{ color: "#e91e8c" }}>Acceso directo</div>
+                )}
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── TOP COMPAÑÍAS + FORMULARIO ───────────────────────────────── */}
-      <section className="py-16" style={{ background: "#0a0a0a" }}>
+      {/* ══ 2. WIDGET KIWATIO + RANKING VIVO ══════════════════════════════ */}
+      <section id="factura" className="py-16" style={{ background: "linear-gradient(180deg, #0a0a0a, #0f0520 50%, #0a0a0a)" }}>
         <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Top compañías */}
-            <div
-              className="lg:col-span-1 rounded-2xl p-6"
-              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
-            >
-              <div
-                className="text-xs font-bold uppercase tracking-widest mb-5"
-                style={{ color: "#e91e8c" }}
-              >
-                Top 10 Compañías · Últimos 90 días
+          <div className="grid lg:grid-cols-3 gap-8 items-start">
+
+            {/* iFrame — 2/3 */}
+            <div className="lg:col-span-2">
+              <div className="mb-5">
+                <div
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mb-3 uppercase tracking-widest"
+                  style={{ background: "rgba(233,30,140,0.12)", border: "1px solid rgba(233,30,140,0.25)", color: "#e91e8c" }}
+                >
+                  Análisis gratuito · 2 minutos
+                </div>
+                <h2 className="text-2xl font-black text-white mb-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                  Sube tu factura y descubre cuánto ahorras
+                </h2>
+                <p className="text-white/50 text-sm">
+                  Sin compromiso. Te digo exactamente si estás pagando de más y cuánto.
+                </p>
               </div>
-              <div className="space-y-1">
-                {humano.topCompanies.map((company, i) => (
-                  <CompanyBar key={company.name} company={company} delay={i * 80} />
+              <div
+                className="rounded-2xl overflow-hidden"
+                style={{ border: "1px solid rgba(233,30,140,0.2)", boxShadow: "0 0 48px rgba(233,30,140,0.1)" }}
+              >
+                <iframe
+                  src={widgetUrl}
+                  title="Analiza tu factura de energía"
+                  className="w-full block"
+                  style={{ height: 580, border: "none", background: "#fff" }}
+                  loading="lazy"
+                />
+              </div>
+            </div>
+
+            {/* Ranking — 1/3 */}
+            <div>
+              <div className="mb-5">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#39d353", boxShadow: "0 0 6px #39d353" }} />
+                  <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "#39d353" }}>En directo</span>
+                </div>
+                <h2 className="text-2xl font-black text-white" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                  Top Compañías
+                </h2>
+                <p className="text-white/40 text-xs mt-1">
+                  Últimos 90 días · {humano.name.split(" ")[0]}
+                </p>
+              </div>
+              <div
+                className="rounded-2xl p-5"
+                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
+              >
+                <LiveRanking initialCompanies={humano.topCompanies} />
+              </div>
+
+              {/* Micro-stats debajo del ranking */}
+              <div
+                className="mt-4 rounded-2xl p-5 grid grid-cols-3 gap-3 text-center"
+                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
+              >
+                {[
+                  { v: "95%",  l: "Resueltos" },
+                  { v: "48h",  l: "Tiempo medio" },
+                  { v: "4.9",  l: "Valoración" },
+                ].map((s) => (
+                  <div key={s.l}>
+                    <div className="text-base font-black" style={{ color: "#e91e8c" }}>{s.v}</div>
+                    <div className="text-xs text-white/40 mt-0.5 leading-tight">{s.l}</div>
+                  </div>
                 ))}
               </div>
             </div>
-
-            {/* Formulario de contacto */}
-            <div
-              className="lg:col-span-2 rounded-2xl p-8"
-              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
-            >
-              <ContactForm humano={humano} />
-            </div>
           </div>
         </div>
       </section>
 
-      {/* ── EN QUÉ TE AYUDO + TESTIMONIOS + PROCESO ──────────────────── */}
-      <section className="py-16" style={{ background: "linear-gradient(180deg, #0a0a0a, #0f0520)" }}>
+      {/* ══ 3. SERVICIOS + TESTIMONIOS + PROCESO ══════════════════════════ */}
+      <section className="py-16" style={{ background: "#0a0a0a" }}>
         <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
           <div className="grid lg:grid-cols-3 gap-8">
 
             {/* En qué te ayudo */}
-            <div
-              className="rounded-2xl p-7"
-              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
-            >
-              <h2
-                className="text-xl font-black text-white mb-6"
-                style={{ fontFamily: "'Montserrat', sans-serif" }}
-              >
+            <div className="rounded-2xl p-7" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <h2 className="text-xl font-black text-white mb-6" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                 En qué te ayudo
               </h2>
               <ul className="space-y-3">
-                {humano.services.map((service) => (
+                {services.map((service) => (
                   <li key={service} className="flex items-start gap-3">
                     <CheckCircle size={16} className="flex-shrink-0 mt-0.5" style={{ color: "#39d353" }} />
                     <span className="text-white/70 text-sm leading-relaxed">{service}</span>
                   </li>
                 ))}
               </ul>
-
-              {/* Stats de rendimiento */}
-              <div className="mt-8 pt-6" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { value: "95%", label: "Casos resueltos" },
-                    { value: "48h", label: "Cambio cerrado" },
-                    { value: "4.9/5", label: "Satisfacción" },
-                  ].map((s) => (
-                    <div key={s.label} className="text-center">
-                      <div className="text-lg font-black" style={{ color: "#e91e8c" }}>{s.value}</div>
-                      <div className="text-xs text-white/40 leading-tight mt-0.5">{s.label}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
 
             {/* Testimonios */}
-            <div
-              className="rounded-2xl p-7"
-              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
-            >
-              <h2
-                className="text-xl font-black text-white mb-6"
-                style={{ fontFamily: "'Montserrat', sans-serif" }}
-              >
+            <div className="rounded-2xl p-7" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <h2 className="text-xl font-black text-white mb-6" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                 Qué dicen mis clientes
               </h2>
-              <div className="space-y-5">
-                {humano.testimonials.map((t, i) => (
-                  <div
-                    key={i}
-                    className="rounded-xl p-4"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
-                  >
-                    <div className="flex gap-0.5 mb-3">
+              <div className="space-y-4">
+                {testimonials.map((t, i) => (
+                  <div key={i} className="rounded-xl p-4"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div className="flex gap-0.5 mb-2.5">
                       {[...Array(5)].map((_, j) => (
-                        <Star key={j} size={12} fill="#f59e0b" style={{ color: "#f59e0b" }} />
+                        <Star key={j} size={11} fill="#f59e0b" style={{ color: "#f59e0b" }} />
                       ))}
                     </div>
                     <p className="text-white/80 text-sm leading-relaxed mb-3 italic">"{t.text}"</p>
@@ -590,18 +584,12 @@ export default function HumanoProfile() {
             </div>
 
             {/* Cómo trabajamos */}
-            <div
-              className="rounded-2xl p-7"
-              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
-            >
-              <h2
-                className="text-xl font-black text-white mb-6"
-                style={{ fontFamily: "'Montserrat', sans-serif" }}
-              >
+            <div className="rounded-2xl p-7" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              <h2 className="text-xl font-black text-white mb-6" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                 Cómo trabajamos
               </h2>
               <div className="space-y-5">
-                {humano.process.map((step, i) => (
+                {process.map((step, i) => (
                   <div key={i} className="flex items-start gap-4">
                     <div
                       className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0"
@@ -612,28 +600,17 @@ export default function HumanoProfile() {
                     >
                       {String(i + 1).padStart(2, "0")}
                     </div>
-                    <div className="flex-1 pt-1">
-                      <p className="text-white/75 text-sm leading-relaxed">{step}</p>
-                    </div>
+                    <p className="text-white/75 text-sm leading-relaxed pt-1.5">{step}</p>
                   </div>
                 ))}
               </div>
-
-              {/* CTA final */}
               <div className="mt-8 pt-6" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
                 <a
-                  href={WIDGET_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:scale-105"
-                  style={{
-                    background: "linear-gradient(135deg, #e91e8c, #7b2ff7)",
-                    boxShadow: "0 0 24px rgba(233,30,140,0.3)",
-                  }}
+                  href="#factura"
+                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:scale-[1.02]"
+                  style={{ background: "linear-gradient(135deg, #e91e8c, #7b2ff7)", boxShadow: "0 0 24px rgba(233,30,140,0.3)" }}
                 >
-                  <Zap size={16} />
-                  Empezar ahora — es gratis
-                  <ChevronRight size={16} />
+                  <Zap size={16} />Empezar ahora — es gratis<ChevronRight size={16} />
                 </a>
               </div>
             </div>
@@ -641,91 +618,87 @@ export default function HumanoProfile() {
         </div>
       </section>
 
-      {/* ── DESCRIPCIÓN LARGA ─────────────────────────────────────────── */}
-      <section className="py-16" style={{ background: "#0a0a0a" }}>
-        <div className="container mx-auto px-4 lg:px-8 max-w-3xl text-center">
-          <h2
-            className="text-2xl font-black text-white mb-6"
-            style={{ fontFamily: "'Montserrat', sans-serif" }}
+      {/* ══ 4. FORMULARIO WHATSAPP ═════════════════════════════════════════ */}
+      <section className="py-16" style={{ background: "linear-gradient(180deg, #0a0a0a, #0f0520)" }}>
+        <div className="container mx-auto px-4 lg:px-8 max-w-3xl">
+          <div
+            className="rounded-2xl p-8"
+            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
           >
-            Sobre {humano.name.split(" ")[0]}
-          </h2>
-          <p className="text-white/60 text-lg leading-relaxed">{humano.description}</p>
+            <ContactForm humano={humano} />
+          </div>
         </div>
       </section>
 
-      {/* ── OTROS ASESORES ───────────────────────────────────────────── */}
+      {/* ══ 5. SOBRE EL ASESOR (condicional) ══════════════════════════════ */}
+      {humano.description && (
+        <section className="py-16" style={{ background: "#0a0a0a" }}>
+          <div className="container mx-auto px-4 lg:px-8 max-w-3xl text-center">
+            <h2 className="text-2xl font-black text-white mb-6" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+              Sobre {humano.name.split(" ")[0]}
+            </h2>
+            <p className="text-white/60 text-lg leading-relaxed">{humano.description}</p>
+          </div>
+        </section>
+      )}
+
+      {/* ══ 6. OTROS ASESORES ══════════════════════════════════════════════ */}
       <section className="py-16" style={{ background: "linear-gradient(180deg, #0a0a0a, #0f0520)" }}>
         <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
-          <h2
-            className="text-2xl font-black text-white mb-8 text-center"
-            style={{ fontFamily: "'Montserrat', sans-serif" }}
-          >
+          <h2 className="text-2xl font-black text-white mb-8 text-center" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             Otros asesores del equipo
           </h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {HUMANOS.filter((h) => h.slug !== humano.slug)
-              .slice(0, 3)
-              .map((h, idx) => {
-                const hIdx = HUMANOS.findIndex((x) => x.slug === h.slug);
-                const hColor = AVATAR_COLORS[hIdx % AVATAR_COLORS.length];
-                const hInitials = h.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
-                return (
-                  <Link key={h.slug} href={`/humanos/${h.slug}`}>
-                    <div
-                      className="rounded-xl p-5 flex items-center gap-4 cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:border-pink-500/30"
-                      style={{
-                        background: "rgba(255,255,255,0.03)",
-                        border: "1px solid rgba(255,255,255,0.07)",
-                      }}
-                    >
-                      {/* Avatar */}
-                      <div className="relative flex-shrink-0">
-                        <img
-                          src={h.image}
-                          alt={h.name}
-                          className="w-16 h-16 rounded-full object-cover object-top"
-                          onError={(e) => {
-                            const target = e.currentTarget;
-                            target.style.display = "none";
-                            const fallback = target.nextElementSibling as HTMLElement;
-                            if (fallback) fallback.style.display = "flex";
-                          }}
-                        />
-                        <div
-                          className="w-16 h-16 rounded-full hidden items-center justify-center text-xl font-black text-white flex-shrink-0"
-                          style={{ background: `linear-gradient(135deg, ${hColor}, ${hColor}80)` }}
-                        >
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {HUMANOS.filter((h) => h.slug !== humano.slug).slice(0, 3).map((h) => {
+              const hIdx = HUMANOS.findIndex((x) => x.slug === h.slug);
+              const hColor = AVATAR_COLORS[hIdx % AVATAR_COLORS.length];
+              const hInitials = h.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+              return (
+                <Link key={h.slug} href={`/humanos/${h.slug}`}>
+                  <div
+                    className="rounded-xl p-5 flex items-center gap-4 cursor-pointer transition-all duration-200 hover:-translate-y-1"
+                    style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
+                  >
+                    <div className="relative flex-shrink-0">
+                      {h.image ? (
+                        <>
+                          <img src={h.image} alt={h.name} className="w-14 h-14 rounded-full object-cover object-top"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                              const fb = e.currentTarget.nextElementSibling as HTMLElement;
+                              if (fb) fb.style.display = "flex";
+                            }} />
+                          <div className="w-14 h-14 rounded-full hidden items-center justify-center text-lg font-black text-white"
+                            style={{ background: `linear-gradient(135deg, ${hColor}, ${hColor}80)` }}>
+                            {hInitials}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-black text-white"
+                          style={{ background: `linear-gradient(135deg, ${hColor}, ${hColor}80)` }}>
                           {hInitials}
                         </div>
-                        <div
-                          className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2"
-                          style={{
-                            background: h.status === "online" ? "#39d353" : "#f59e0b",
-                            borderColor: "#0a0a0a",
-                          }}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-black text-white truncate" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                          {h.name}
-                        </div>
-                        <div className="text-white/50 text-xs truncate">{h.role}</div>
-                      </div>
-                      <ChevronRight size={16} className="text-white/30 flex-shrink-0" />
+                      )}
+                      <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2"
+                        style={{ background: h.status === "online" ? "#39d353" : "#f59e0b", borderColor: "#0a0a0a" }} />
                     </div>
-                  </Link>
-                );
-              })}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-black text-white truncate" style={{ fontFamily: "'Montserrat', sans-serif" }}>{h.name}</div>
+                      <div className="text-white/50 text-xs truncate">{h.role}</div>
+                    </div>
+                    <ChevronRight size={16} className="text-white/30 flex-shrink-0" />
+                  </div>
+                </Link>
+              );
+            })}
           </div>
           <div className="text-center mt-8">
             <Link href="/humanos">
               <span
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-white text-sm cursor-pointer transition-all duration-200 hover:scale-105"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-sm cursor-pointer transition-all duration-200 hover:scale-105"
                 style={{ background: "rgba(233,30,140,0.12)", border: "1px solid rgba(233,30,140,0.3)", color: "#e91e8c" }}
               >
-                Ver todo el equipo
-                <ChevronRight size={14} />
+                Ver todo el equipo<ChevronRight size={14} />
               </span>
             </Link>
           </div>

@@ -30,6 +30,7 @@ export interface HumanoData {
   process: string[];
   topCompanies: { pos: number; name: string; color: string }[];
   whatsappMsg: string;
+  invoiceCtaUrl?: string; // URL personalizada del widget; si vacío usa la global
 }
 
 export const HUMANOS: HumanoData[] = [
