@@ -97,7 +97,7 @@ router.get("/comerciales", (_req, res) => {
 // POST /api/admin/comerciales — crear perfil
 router.post("/comerciales", async (req, res) => {
   const { slug, display_name, phone, whatsapp, public_email, about_text,
-          invoice_cta_url, photo_url, invite_email } = req.body ?? {};
+          invoice_cta_url, photo_url, invite_email, profile_json } = req.body ?? {};
 
   if (!slug || !display_name) {
     return res.status(400).json({ error: "slug y display_name son obligatorios" });
@@ -112,13 +112,20 @@ router.post("/comerciales", async (req, res) => {
     }
   }
 
+  if (profile_json !== undefined && profile_json !== null) {
+    try { JSON.parse(profile_json); } catch {
+      return res.status(400).json({ error: "profile_json no es JSON válido" });
+    }
+  }
+
   db.prepare(`
     INSERT INTO advisor_profiles
-      (slug, display_name, phone, whatsapp, public_email, about_text, invoice_cta_url, photo_url)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      (slug, display_name, phone, whatsapp, public_email, about_text, invoice_cta_url, photo_url, profile_json)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(slug, display_name, phone ?? null, whatsapp ?? null,
          public_email ?? null, about_text ?? null,
-         invoice_cta_url ?? null, photo_url ?? null);
+         invoice_cta_url ?? null, photo_url ?? null,
+         profile_json ?? null);
 
   const profile = db.prepare("SELECT * FROM advisor_profiles WHERE slug = ?").get(slug) as AdvisorProfileRow;
 
@@ -155,11 +162,17 @@ router.put("/comerciales/:id", (req, res) => {
   if (!profile) return res.status(404).json({ error: "Perfil no encontrado" });
 
   const { slug, display_name, phone, whatsapp, public_email, about_text,
-          invoice_cta_url, photo_url, is_active } = req.body ?? {};
+          invoice_cta_url, photo_url, is_active, profile_json } = req.body ?? {};
 
   if (invoice_cta_url) {
     try { new URL(invoice_cta_url); } catch {
       return res.status(400).json({ error: "invoice_cta_url no es una URL válida" });
+    }
+  }
+
+  if (profile_json !== undefined && profile_json !== null) {
+    try { JSON.parse(profile_json); } catch {
+      return res.status(400).json({ error: "profile_json no es JSON válido" });
     }
   }
 
@@ -174,12 +187,14 @@ router.put("/comerciales/:id", (req, res) => {
       invoice_cta_url   = COALESCE(?, invoice_cta_url),
       photo_url         = COALESCE(?, photo_url),
       is_active         = COALESCE(?, is_active),
+      profile_json      = COALESCE(?, profile_json),
       updated_at        = datetime('now')
     WHERE id = ?
   `).run(
     slug ?? null, display_name ?? null, phone ?? null, whatsapp ?? null,
     public_email ?? null, about_text ?? null, invoice_cta_url ?? null,
     photo_url ?? null, is_active !== undefined ? Number(is_active) : null,
+    profile_json ?? null,
     id
   );
 
@@ -253,6 +268,60 @@ router.put("/users/:id/status", (req, res) => {
   }
   db.prepare("UPDATE users SET status = ?, updated_at = datetime('now') WHERE id = ?").run(status, id);
   return res.json({ ok: true });
+});
+
+// POST /api/admin/users/crear — crear usuario (admin o comercial) con invitación opcional
+router.post("/users/crear", async (req, res) => {
+  const { email, name, role, invite_profile_id } = req.body ?? {};
+
+  if (!email || !name) {
+    return res.status(400).json({ error: "email y name son obligatorios" });
+  }
+  if (!["admin", "comercial"].includes(role)) {
+    return res.status(400).json({ error: "role debe ser 'admin' o 'comercial'" });
+  }
+
+  const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(email) as { id: number } | undefined;
+  if (existing) return res.status(409).json({ error: "Ya existe un usuario con ese email" });
+
+  db.prepare(`
+    INSERT INTO users (email, name, role, status)
+    VALUES (?, ?, ?, 'pending')
+  `).run(email, name, role);
+
+  const newUser = db.prepare("SELECT * FROM users WHERE email = ? LIMIT 1").get(email) as UserRow;
+
+  // Si se pasa un profile_id, vincular el perfil al usuario
+  if (invite_profile_id) {
+    const profileId = Number(invite_profile_id);
+    const profile = db.prepare("SELECT * FROM advisor_profiles WHERE id = ?").get(profileId) as AdvisorProfileRow | undefined;
+    if (profile) {
+      db.prepare("UPDATE advisor_profiles SET user_id = ?, updated_at = datetime('now') WHERE id = ?").run(newUser.id, profileId);
+    }
+  }
+
+  // Crear invitación y enviar email
+  const token = nanoid(32);
+  const expires = new Date(Date.now() + 48 * 3_600_000).toISOString();
+
+  // Obtener profile_id para la invitación (puede venir del body o del profile vinculado)
+  const profileForInvite = invite_profile_id
+    ? db.prepare("SELECT id, display_name FROM advisor_profiles WHERE id = ?").get(Number(invite_profile_id)) as AdvisorProfileRow | undefined
+    : db.prepare("SELECT id, display_name FROM advisor_profiles WHERE user_id = ? LIMIT 1").get(newUser.id) as AdvisorProfileRow | undefined;
+
+  db.prepare(`
+    INSERT INTO invitations (token, email, profile_id, expires_at)
+    VALUES (?, ?, ?, ?)
+  `).run(token, email, profileForInvite?.id ?? null, expires);
+
+  try {
+    await sendInvitationEmail(email, token, profileForInvite?.display_name ?? name);
+  } catch (e) {
+    console.error("[EMAIL]", e);
+  }
+
+  const link = `${config.APP_URL}/invitation/accept/${token}`;
+  return res.status(201).json({ ok: true, user: newUser, link });
 });
 
 // POST /api/admin/invitation/accept — activar cuenta desde token

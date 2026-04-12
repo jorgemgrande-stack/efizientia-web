@@ -90,6 +90,11 @@ export const api = {
           method: "PUT",
           body: JSON.stringify({ status }),
         }),
+      create: (data: { email: string; name: string; role: string; invite_profile_id?: number }) =>
+        apiFetch<{ ok: boolean; user: unknown; link: string }>("/api/admin/users/crear", {
+          method: "POST",
+          body: JSON.stringify(data),
+        }),
     },
     invitation: {
       accept: (token: string, password: string) =>

@@ -1,14 +1,16 @@
 /**
  * Efizientia SaaS · Panel Admin — Editar Comercial
- * Edición completa de un perfil de asesor (admin: todos los campos).
- * También permite invitar / reenviar invitación desde aquí.
+ * Edición completa de un perfil de asesor.
+ * Campos básicos + todos los campos HumanoData para la sección pública /humanos.
+ * Los arrays (services, stats, testimonials, process, topCompanies) se editan
+ * como JSON en textarea, con botón de formato y validación en tiempo real.
  */
 
 import { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import {
   Save, AlertCircle, CheckCircle, ArrowLeft, Mail,
-  Trash2, ToggleLeft, ToggleRight, ExternalLink
+  Trash2, ToggleLeft, ToggleRight, ExternalLink, Code2
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { api, ApiError } from "@/lib/api";
@@ -24,6 +26,7 @@ interface ComercialDetail {
   invoice_cta_url: string | null;
   photo_url: string | null;
   is_active: number;
+  profile_json: string | null;
   user_id: number | null;
   user_email: string | null;
   user_name: string | null;
@@ -31,14 +34,105 @@ interface ComercialDetail {
   user_last_login: string | null;
 }
 
+// Default JSON structures for each array field
+const DEFAULT_STATS = JSON.stringify([
+  { value: "+1.000", label: "Facturas optimizadas" },
+  { value: "15 min", label: "Respuesta media" },
+  { value: "22–38%", label: "Ahorro medio" },
+], null, 2);
+
+const DEFAULT_SERVICES = JSON.stringify([
+  "Optimización de potencia (P1–P6)",
+  "Tarifa óptima Hogar & PyME",
+  "Compensación de excedentes solar",
+  "Altas, cambios de titular y SEPA",
+  "Gas: RL, lecturas y regularizaciones",
+  "Auditoría de facturas y penalizaciones",
+], null, 2);
+
+const DEFAULT_TESTIMONIALS = JSON.stringify([
+  { text: "Bajó mi factura un 34% sin cambiar hábitos.", author: "Patricia G.", detail: "Vivienda · Sevilla" },
+  { text: "En 24h tenía oferta firmada.", author: "Óscar M.", detail: "Tienda · Cádiz" },
+], null, 2);
+
+const DEFAULT_PROCESS = JSON.stringify([
+  "Sube tu factura o déjame tus datos.",
+  "Analizo patrón de consumo y potencias.",
+  "Te envío la mejor tarifa y el ahorro estimado.",
+  "Cerramos el cambio con firma SEPA en minutos.",
+], null, 2);
+
+const DEFAULT_TOP_COMPANIES = JSON.stringify([
+  { pos: 1, name: "Audax", color: "#e91e8c" },
+  { pos: 2, name: "Repsol Energía", color: "#ff6b35" },
+  { pos: 3, name: "Naturgy", color: "#39d353" },
+  { pos: 4, name: "Iberdrola", color: "#3b82f6" },
+  { pos: 5, name: "Holaluz", color: "#a855f7" },
+], null, 2);
+
 const inputBase = "w-full px-4 py-3 rounded-xl text-white text-sm outline-none transition-all";
 const inputStyle = { background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" };
+const focusMagenta = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  e.currentTarget.style.borderColor = "#e91e8c";
+};
+const blurGray = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
+};
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
       <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">{label}</label>
       {children}
+      {hint && <p className="text-white/30 text-xs mt-1">{hint}</p>}
+    </div>
+  );
+}
+
+function JsonField({
+  label, hint, value, onChange, defaultVal,
+}: {
+  label: string;
+  hint?: string;
+  value: string;
+  onChange: (v: string) => void;
+  defaultVal: string;
+}) {
+  const [valid, setValid] = useState(true);
+
+  const handleChange = (v: string) => {
+    onChange(v);
+    try { JSON.parse(v); setValid(true); } catch { setValid(false); }
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">{label}</label>
+        <div className="flex items-center gap-2">
+          {!valid && <span className="text-xs text-red-400">JSON inválido</span>}
+          <button
+            type="button"
+            onClick={() => { try { handleChange(JSON.stringify(JSON.parse(value), null, 2)); } catch { handleChange(defaultVal); } }}
+            className="text-white/30 hover:text-white/60 transition-colors p-1"
+            title="Formatear / restaurar valor por defecto"
+          >
+            <Code2 size={12} />
+          </button>
+        </div>
+      </div>
+      <textarea
+        value={value}
+        onChange={(e) => handleChange(e.target.value)}
+        rows={6}
+        className="w-full px-4 py-3 rounded-xl text-white text-xs outline-none transition-all resize-y font-mono"
+        style={{
+          ...inputStyle,
+          borderColor: !valid ? "#e91e8c" : "rgba(255,255,255,0.12)",
+        }}
+        onFocus={focusMagenta}
+        onBlur={blurGray}
+      />
       {hint && <p className="text-white/30 text-xs mt-1">{hint}</p>}
     </div>
   );
@@ -52,7 +146,7 @@ export default function EditarComercial() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  // Fields
+  // Basic fields
   const [slug, setSlug] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
@@ -63,7 +157,23 @@ export default function EditarComercial() {
   const [photoUrl, setPhotoUrl] = useState("");
   const [isActive, setIsActive] = useState(true);
 
-  // UI
+  // HumanoData extended fields
+  const [fullName, setFullName] = useState("");
+  const [roleLabel, setRoleLabel] = useState("");
+  const [tagline, setTagline] = useState("");
+  const [status, setStatus] = useState<"online" | "busy" | "offline">("online");
+  const [schedule, setSchedule] = useState("");
+  const [whatsappMsg, setWhatsappMsg] = useState("");
+  const [tags, setTags] = useState(""); // comma-separated string
+
+  // JSON array fields
+  const [statsJson, setStatsJson] = useState(DEFAULT_STATS);
+  const [servicesJson, setServicesJson] = useState(DEFAULT_SERVICES);
+  const [testimonialsJson, setTestimonialsJson] = useState(DEFAULT_TESTIMONIALS);
+  const [processJson, setProcessJson] = useState(DEFAULT_PROCESS);
+  const [topCompaniesJson, setTopCompaniesJson] = useState(DEFAULT_TOP_COMPANIES);
+
+  // UI state
   const [saving, setSaving] = useState(false);
   const [saveOk, setSaveOk] = useState(false);
   const [error, setError] = useState("");
@@ -92,14 +202,68 @@ export default function EditarComercial() {
         setPhotoUrl(c.photo_url ?? "");
         setIsActive(!!c.is_active);
         setInviteEmail(c.user_email ?? "");
+
+        // Load profile_json fields
+        if (c.profile_json) {
+          try {
+            const pj = JSON.parse(c.profile_json);
+            setFullName(pj.fullName ?? c.display_name ?? "");
+            setRoleLabel(pj.role ?? "");
+            setTagline(pj.tagline ?? "");
+            setStatus(pj.status ?? "online");
+            setSchedule(pj.schedule ?? "");
+            setWhatsappMsg(pj.whatsappMsg ?? "");
+            setTags(Array.isArray(pj.tags) ? pj.tags.join(", ") : "");
+            if (pj.stats) setStatsJson(JSON.stringify(pj.stats, null, 2));
+            if (pj.services) setServicesJson(JSON.stringify(pj.services, null, 2));
+            if (pj.testimonials) setTestimonialsJson(JSON.stringify(pj.testimonials, null, 2));
+            if (pj.process) setProcessJson(JSON.stringify(pj.process, null, 2));
+            if (pj.topCompanies) setTopCompaniesJson(JSON.stringify(pj.topCompanies, null, 2));
+          } catch { /* ignore parse errors */ }
+        } else {
+          setFullName(c.display_name ?? "");
+        }
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [id]);
 
+  const buildProfileJson = (): string | null => {
+    try {
+      const obj: Record<string, unknown> = {
+        slug,
+        name: displayName,
+        fullName: fullName || displayName,
+        role: roleLabel,
+        tagline,
+        description: aboutText,
+        image: photoUrl,
+        tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
+        status,
+        schedule,
+        whatsappMsg,
+        stats: JSON.parse(statsJson),
+        services: JSON.parse(servicesJson),
+        testimonials: JSON.parse(testimonialsJson),
+        process: JSON.parse(processJson),
+        topCompanies: JSON.parse(topCompaniesJson),
+      };
+      return JSON.stringify(obj);
+    } catch {
+      return null;
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(""); setSaveOk(false);
+
+    const profile_json = buildProfileJson();
+    if (profile_json === null) {
+      setError("Hay errores de formato JSON en los campos de arrays. Corrígelos antes de guardar.");
+      return;
+    }
+
     setSaving(true);
     try {
       await api.admin.comerciales.update(Number(id), {
@@ -108,6 +272,7 @@ export default function EditarComercial() {
         public_email: publicEmail || null, about_text: aboutText || null,
         invoice_cta_url: invoiceCtaUrl || null, photo_url: photoUrl || null,
         is_active: isActive ? 1 : 0,
+        profile_json,
       });
       setSaveOk(true);
       setTimeout(() => setSaveOk(false), 3000);
@@ -254,79 +419,178 @@ export default function EditarComercial() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Main form */}
         <form onSubmit={handleSave} className="lg:col-span-2 space-y-6">
-          {/* Identificación */}
-          <div className="rounded-2xl p-6 space-y-5"
+
+          {/* ── Identificación ───────────────────────────────── */}
+          <section className="rounded-2xl p-6 space-y-5"
             style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}>
             <h2 className="text-sm font-bold text-white/50 uppercase tracking-widest">Identificación</h2>
-
             <div className="grid sm:grid-cols-2 gap-4">
-              <Field label="Nombre público *">
+              <Field label="Nombre corto (display) *">
                 <input type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required
-                  className={inputBase} style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#e91e8c")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")} />
+                  className={inputBase} style={inputStyle} onFocus={focusMagenta} onBlur={blurGray} />
               </Field>
               <Field label="Slug URL *" hint="/humanos/{slug}">
                 <input type="text" value={slug}
                   onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-                  required className={inputBase} style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#e91e8c")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")} />
+                  required className={inputBase} style={inputStyle} onFocus={focusMagenta} onBlur={blurGray} />
               </Field>
             </div>
-          </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="Nombre completo" hint="Para la ficha pública">
+                <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
+                  placeholder={displayName} className={inputBase} style={inputStyle}
+                  onFocus={focusMagenta} onBlur={blurGray} />
+              </Field>
+              <Field label="Rol / Cargo" hint="Ej: Asesor Senior · Luz & Gas">
+                <input type="text" value={roleLabel} onChange={(e) => setRoleLabel(e.target.value)}
+                  placeholder="Asesor Senior · Luz & Gas" className={inputBase} style={inputStyle}
+                  onFocus={focusMagenta} onBlur={blurGray} />
+              </Field>
+            </div>
+            <Field label="Tagline" hint="Frase corta que aparece bajo el nombre">
+              <input type="text" value={tagline} onChange={(e) => setTagline(e.target.value)}
+                placeholder="El que encuentra el ahorro donde nadie mira." className={inputBase} style={inputStyle}
+                onFocus={focusMagenta} onBlur={blurGray} />
+            </Field>
+            <div className="grid sm:grid-cols-3 gap-4">
+              <Field label="Estado">
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as "online" | "busy" | "offline")}
+                  className={inputBase}
+                  style={{ ...inputStyle, cursor: "pointer" }}
+                  onFocus={focusMagenta}
+                  onBlur={blurGray}
+                >
+                  <option value="online">🟢 online</option>
+                  <option value="busy">🟡 busy</option>
+                  <option value="offline">⚫ offline</option>
+                </select>
+              </Field>
+              <Field label="Horario" hint="Ej: 08:00–20:00 (L–V)">
+                <input type="text" value={schedule} onChange={(e) => setSchedule(e.target.value)}
+                  placeholder="08:00–20:00 (L–V)" className={inputBase} style={inputStyle}
+                  onFocus={focusMagenta} onBlur={blurGray} />
+              </Field>
+              <Field label="Tags" hint="Separados por coma">
+                <input type="text" value={tags} onChange={(e) => setTags(e.target.value)}
+                  placeholder="Luz, Gas, Hogar" className={inputBase} style={inputStyle}
+                  onFocus={focusMagenta} onBlur={blurGray} />
+              </Field>
+            </div>
+          </section>
 
-          {/* Contacto */}
-          <div className="rounded-2xl p-6 space-y-5"
+          {/* ── Contacto ─────────────────────────────────────── */}
+          <section className="rounded-2xl p-6 space-y-5"
             style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}>
             <h2 className="text-sm font-bold text-white/50 uppercase tracking-widest">Contacto</h2>
-
             <div className="grid sm:grid-cols-2 gap-4">
               <Field label="Teléfono">
                 <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
                   placeholder="+34 6XX XXX XXX" className={inputBase} style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#e91e8c")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")} />
+                  onFocus={focusMagenta} onBlur={blurGray} />
               </Field>
               <Field label="WhatsApp">
                 <input type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)}
                   placeholder="+34 6XX XXX XXX" className={inputBase} style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#e91e8c")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")} />
+                  onFocus={focusMagenta} onBlur={blurGray} />
               </Field>
             </div>
-
             <Field label="Email público">
               <input type="email" value={publicEmail} onChange={(e) => setPublicEmail(e.target.value)}
                 placeholder="nombre@efizientia.es" className={inputBase} style={inputStyle}
-                onFocus={(e) => (e.currentTarget.style.borderColor = "#e91e8c")}
-                onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")} />
+                onFocus={focusMagenta} onBlur={blurGray} />
             </Field>
-
+            <Field label="Mensaje WhatsApp" hint="Texto pre-rellenado al hacer click en el botón WhatsApp">
+              <input type="text" value={whatsappMsg} onChange={(e) => setWhatsappMsg(e.target.value)}
+                placeholder="Hola, me gustaría que me ayudaras a optimizar mi factura." className={inputBase} style={inputStyle}
+                onFocus={focusMagenta} onBlur={blurGray} />
+            </Field>
             <Field label="Descripción">
               <textarea value={aboutText} onChange={(e) => setAboutText(e.target.value)}
-                rows={3} className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none transition-all resize-none"
-                style={inputStyle}
-                onFocus={(e) => (e.currentTarget.style.borderColor = "#e91e8c")}
-                onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")} />
+                rows={4} className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none transition-all resize-none"
+                style={inputStyle} onFocus={focusMagenta} onBlur={blurGray} />
             </Field>
-
             <div className="grid sm:grid-cols-2 gap-4">
-              <Field label="URL CTA factura" hint="Opcional">
+              <Field label="URL foto" hint="URL de imagen de perfil">
+                <input type="text" value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)}
+                  placeholder="https://… o /images/…" className={inputBase} style={inputStyle}
+                  onFocus={focusMagenta} onBlur={blurGray} />
+              </Field>
+              <Field label="URL CTA factura" hint="Enlace personalizado para analizar factura">
                 <input type="url" value={invoiceCtaUrl} onChange={(e) => setInvoiceCtaUrl(e.target.value)}
                   placeholder="https://…" className={inputBase} style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#e91e8c")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")} />
-              </Field>
-              <Field label="URL foto" hint="Opcional">
-                <input type="url" value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)}
-                  placeholder="https://… o /images/…" className={inputBase} style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#e91e8c")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")} />
+                  onFocus={focusMagenta} onBlur={blurGray} />
               </Field>
             </div>
-          </div>
+          </section>
 
+          {/* ── Estadísticas ─────────────────────────────────── */}
+          <section className="rounded-2xl p-6"
+            style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <h2 className="text-sm font-bold text-white/50 uppercase tracking-widest mb-5">Estadísticas</h2>
+            <JsonField
+              label="Stats array"
+              hint='Array de objetos: [{ "value": "+1.000", "label": "Facturas optimizadas" }, …]'
+              value={statsJson}
+              onChange={setStatsJson}
+              defaultVal={DEFAULT_STATS}
+            />
+          </section>
+
+          {/* ── Servicios ────────────────────────────────────── */}
+          <section className="rounded-2xl p-6"
+            style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <h2 className="text-sm font-bold text-white/50 uppercase tracking-widest mb-5">Servicios</h2>
+            <JsonField
+              label="Services array"
+              hint='Array de strings: ["Optimización de potencia", "Tarifa óptima", …]'
+              value={servicesJson}
+              onChange={setServicesJson}
+              defaultVal={DEFAULT_SERVICES}
+            />
+          </section>
+
+          {/* ── Proceso ──────────────────────────────────────── */}
+          <section className="rounded-2xl p-6"
+            style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <h2 className="text-sm font-bold text-white/50 uppercase tracking-widest mb-5">Proceso</h2>
+            <JsonField
+              label="Process array"
+              hint='Array de strings con los pasos del proceso: ["Sube tu factura.", "Analizo…", …]'
+              value={processJson}
+              onChange={setProcessJson}
+              defaultVal={DEFAULT_PROCESS}
+            />
+          </section>
+
+          {/* ── Testimonios ──────────────────────────────────── */}
+          <section className="rounded-2xl p-6"
+            style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <h2 className="text-sm font-bold text-white/50 uppercase tracking-widest mb-5">Testimonios</h2>
+            <JsonField
+              label="Testimonials array"
+              hint='Array de objetos: [{ "text": "…", "author": "…", "detail": "…" }, …]'
+              value={testimonialsJson}
+              onChange={setTestimonialsJson}
+              defaultVal={DEFAULT_TESTIMONIALS}
+            />
+          </section>
+
+          {/* ── Top Compañías ────────────────────────────────── */}
+          <section className="rounded-2xl p-6"
+            style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <h2 className="text-sm font-bold text-white/50 uppercase tracking-widest mb-5">Top Compañías</h2>
+            <JsonField
+              label="TopCompanies array"
+              hint='Array de objetos: [{ "pos": 1, "name": "Audax", "color": "#e91e8c" }, …]'
+              value={topCompaniesJson}
+              onChange={setTopCompaniesJson}
+              defaultVal={DEFAULT_TOP_COMPANIES}
+            />
+          </section>
+
+          {/* ── Save ─────────────────────────────────────────── */}
           {error && (
             <div className="flex items-center gap-2 text-sm rounded-xl px-4 py-3"
               style={{ background: "rgba(233,30,140,0.1)", border: "1px solid rgba(233,30,140,0.3)", color: "#e91e8c" }}>
@@ -339,7 +603,6 @@ export default function EditarComercial() {
               <CheckCircle size={14} className="flex-shrink-0" />Cambios guardados
             </div>
           )}
-
           <button
             type="submit"
             disabled={saving}
@@ -397,16 +660,12 @@ export default function EditarComercial() {
               required
               className={inputBase}
               style={inputStyle}
-              onFocus={(e) => (e.currentTarget.style.borderColor = "#e91e8c")}
-              onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")}
+              onFocus={focusMagenta}
+              onBlur={blurGray}
             />
             {inviteResult && (
               <div className="text-xs rounded-xl px-3 py-2"
-                style={{
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  color: "rgba(255,255,255,0.6)"
-                }}>
+                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }}>
                 {inviteResult.msg}
                 {inviteResult.link && (
                   <div className="mt-1.5 font-mono break-all text-xs" style={{ color: "#e91e8c" }}>
@@ -425,6 +684,19 @@ export default function EditarComercial() {
               {inviting ? "Enviando…" : "Enviar invitación"}
             </button>
           </form>
+
+          {/* Quick nav */}
+          <div className="rounded-2xl p-5 space-y-2"
+            style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <h2 className="text-xs font-bold text-white/50 uppercase tracking-widest mb-3">Ir a usuarios</h2>
+            <a
+              href="/admin/usuarios"
+              className="flex items-center gap-2 text-sm font-semibold transition-colors"
+              style={{ color: "#e91e8c" }}
+            >
+              Gestionar usuarios →
+            </a>
+          </div>
         </div>
       </div>
     </AdminLayout>

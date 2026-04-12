@@ -6,7 +6,7 @@
 
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { LayoutDashboard, Users, Menu, LogOut, ExternalLink, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Users, UserCog, Menu, LogOut, ExternalLink, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface AdminLayoutProps {
@@ -17,6 +17,7 @@ interface AdminLayoutProps {
 const adminNav = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard, exact: true },
   { label: "Comerciales", href: "/admin/comerciales", icon: Users, exact: false },
+  { label: "Usuarios", href: "/admin/usuarios", icon: UserCog, exact: false },
 ];
 
 export default function AdminLayout({ children, title }: AdminLayoutProps) {

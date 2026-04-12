@@ -34,6 +34,7 @@ import AdminIndex from "@/pages/admin/AdminIndex";
 import Comerciales from "@/pages/admin/Comerciales";
 import NuevoComercial from "@/pages/admin/NuevoComercial";
 import EditarComercial from "@/pages/admin/EditarComercial";
+import AdminUsuarios from "@/pages/admin/AdminUsuarios";
 
 function Router() {
   return (
@@ -76,6 +77,9 @@ function Router() {
       </Route>
       <Route path="/admin/comerciales/:id">
         {() => <AdminRoute component={EditarComercial} />}
+      </Route>
+      <Route path="/admin/usuarios">
+        {() => <AdminRoute component={AdminUsuarios} />}
       </Route>
 
       {/* ── 404 ─────────────────────────────────────────────── */}
