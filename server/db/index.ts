@@ -51,8 +51,9 @@ mkdirSync(path.dirname(DB_PATH), { recursive: true });
 const _rawDb = new Database(DB_PATH);
 export const db = patchDb(_rawDb);
 
+// busy_timeout: evita "database is locked" en rolling deployments (Railway)
 // WAL mode: lecturas concurrentes mientras se escribe
-db.exec("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;");
+db.exec("PRAGMA busy_timeout = 10000; PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;");
 
 // Crear tablas si no existen
 initSchema(db);
