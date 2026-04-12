@@ -202,21 +202,57 @@ router.put("/comerciales/:id", (req, res) => {
   return res.json(serializeProfile(updated));
 });
 
-// DELETE /api/admin/comerciales/:id
-// Comportamiento: desvincula el usuario y desactiva el perfil.
-// No borra el usuario (decisión de seguridad: evitar borrado accidental de cuentas).
+// DELETE /api/admin/comerciales/:id — borrar perfil definitivamente
+// El usuario vinculado NO se borra (seguridad), solo se desvincula.
 router.delete("/comerciales/:id", (req, res) => {
   const id = Number(req.params.id);
   const profile = db.prepare("SELECT * FROM advisor_profiles WHERE id = ?").get(id) as AdvisorProfileRow | undefined;
   if (!profile) return res.status(404).json({ error: "Perfil no encontrado" });
 
-  // Desactivar y desvincular usuario
-  db.prepare(`
-    UPDATE advisor_profiles SET is_active = 0, user_id = NULL, updated_at = datetime('now')
-    WHERE id = ?
-  `).run(id);
+  // Borrar invitaciones asociadas
+  db.prepare("DELETE FROM invitations WHERE profile_id = ?").run(id);
+  // Borrar el perfil
+  db.prepare("DELETE FROM advisor_profiles WHERE id = ?").run(id);
 
-  return res.json({ ok: true, message: "Perfil desactivado y usuario desvinculado" });
+  return res.json({ ok: true, message: "Perfil eliminado" });
+});
+
+// POST /api/admin/comerciales/:id/crear-cuenta — crear cuenta con email + contraseña directamente
+router.post("/comerciales/:id/crear-cuenta", async (req, res) => {
+  const id = Number(req.params.id);
+  const profile = db.prepare("SELECT * FROM advisor_profiles WHERE id = ?").get(id) as AdvisorProfileRow | undefined;
+  if (!profile) return res.status(404).json({ error: "Perfil no encontrado" });
+
+  const { email, password } = req.body ?? {};
+  if (!email || !password) return res.status(400).json({ error: "Email y contraseña requeridos" });
+  if (password.length < 8) return res.status(400).json({ error: "La contraseña debe tener al menos 8 caracteres" });
+
+  const hash = bcrypt.hashSync(password, 12);
+
+  // Verificar si ya existe usuario con ese email
+  const existing = db.prepare("SELECT * FROM users WHERE email = ? LIMIT 1").get(email) as UserRow | undefined;
+
+  let userId: number;
+  if (existing) {
+    // Actualizar contraseña y activar
+    db.prepare("UPDATE users SET password_hash = ?, status = 'active', updated_at = datetime('now') WHERE id = ?")
+      .run(hash, existing.id);
+    userId = existing.id;
+  } else {
+    // Crear nuevo usuario
+    db.prepare(`
+      INSERT INTO users (email, password_hash, name, role, status)
+      VALUES (?, ?, ?, 'comercial', 'active')
+    `).run(email, hash, profile.display_name);
+    const newUser = db.prepare("SELECT id FROM users WHERE email = ? LIMIT 1").get(email) as { id: number };
+    userId = newUser.id;
+  }
+
+  // Vincular al perfil
+  db.prepare("UPDATE advisor_profiles SET user_id = ?, updated_at = datetime('now') WHERE id = ?").run(userId, id);
+
+  const user = db.prepare("SELECT id, email, name, role, status FROM users WHERE id = ?").get(userId) as UserRow;
+  return res.json({ ok: true, user });
 });
 
 // POST /api/admin/comerciales/:id/invite — enviar/reenviar invitación

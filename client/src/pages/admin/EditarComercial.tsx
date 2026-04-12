@@ -10,7 +10,8 @@ import { useEffect, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import {
   Save, AlertCircle, CheckCircle, ArrowLeft, Mail,
-  Trash2, ToggleLeft, ToggleRight, ExternalLink, Code2, Upload, User
+  Trash2, ToggleLeft, ToggleRight, ExternalLink, Code2,
+  Upload, User, KeyRound, Eye, EyeOff
 } from "lucide-react";
 import { useRef } from "react";
 import AdminLayout from "./AdminLayout";
@@ -181,6 +182,14 @@ export default function EditarComercial() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Acceso (crear cuenta / invitar)
+  const [accesoTab, setAccesoTab] = useState<"cuenta" | "invitacion">("cuenta");
+  const [accEmail, setAccEmail] = useState("");
+  const [accPass, setAccPass] = useState("");
+  const [showAccPass, setShowAccPass] = useState(false);
+  const [accLoading, setAccLoading] = useState(false);
+  const [accResult, setAccResult] = useState<{ ok?: boolean; error?: string } | null>(null);
+
   // Invite
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
@@ -204,6 +213,7 @@ export default function EditarComercial() {
         setInvoiceCtaUrl(c.invoice_cta_url ?? "");
         setPhotoUrl(c.photo_url ?? "");
         setIsActive(!!c.is_active);
+        setAccEmail(c.user_email ?? "");
         setInviteEmail(c.user_email ?? "");
 
         // Load profile_json fields
@@ -295,6 +305,26 @@ export default function EditarComercial() {
       setError(e instanceof ApiError ? e.message : "Error al guardar");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleCrearCuenta = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAccResult(null);
+    setAccLoading(true);
+    try {
+      await api.admin.comerciales.createAccount(Number(id), accEmail, accPass);
+      setAccResult({ ok: true });
+      setAccPass("");
+      // Recargar datos del perfil para reflejar el usuario vinculado
+      api.admin.comerciales.get(Number(id)).then((raw) => {
+        const c = raw as ComercialDetail;
+        setData(c);
+      });
+    } catch (err) {
+      setAccResult({ error: err instanceof ApiError ? err.message : "Error al crear cuenta" });
+    } finally {
+      setAccLoading(false);
     }
   };
 
@@ -674,29 +704,27 @@ export default function EditarComercial() {
           </button>
         </form>
 
-        {/* Sidebar — cuenta + invitación */}
+        {/* Sidebar — cuenta vinculada + gestión de acceso */}
         <div className="space-y-4">
-          {/* Cuenta vinculada */}
+          {/* Cuenta vinculada (info) */}
           <div className="rounded-2xl p-5"
             style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <h2 className="text-xs font-bold text-white/50 uppercase tracking-widest mb-3">Cuenta de acceso</h2>
+            <h2 className="text-xs font-bold text-white/50 uppercase tracking-widest mb-3">Cuenta vinculada</h2>
             {data?.user_id ? (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <div className="text-white text-sm font-semibold">{data.user_name}</div>
                 <div className="text-white/50 text-xs">{data.user_email}</div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className="text-xs font-semibold px-2.5 py-1 rounded-full"
-                    style={{
-                      background: data.user_status === "active" ? "rgba(57,211,83,0.1)" : "rgba(255,255,255,0.06)",
-                      color: data.user_status === "active" ? "#39d353" : "rgba(255,255,255,0.4)",
-                    }}
-                  >
-                    {data.user_status}
-                  </span>
-                </div>
+                <span
+                  className="inline-block text-xs font-semibold px-2.5 py-1 rounded-full"
+                  style={{
+                    background: data.user_status === "active" ? "rgba(57,211,83,0.1)" : "rgba(255,255,255,0.06)",
+                    color: data.user_status === "active" ? "#39d353" : "rgba(255,255,255,0.4)",
+                  }}
+                >
+                  {data.user_status}
+                </span>
                 {data.user_last_login && (
-                  <p className="text-white/30 text-xs">
+                  <p className="text-white/30 text-xs pt-0.5">
                     Último acceso: {new Date(data.user_last_login).toLocaleDateString("es-ES")}
                   </p>
                 )}
@@ -706,56 +734,119 @@ export default function EditarComercial() {
             )}
           </div>
 
-          {/* Invitación */}
-          <form onSubmit={handleInvite} className="rounded-2xl p-5 space-y-3"
+          {/* Gestión de acceso (tabs: crear cuenta / invitar) */}
+          <div className="rounded-2xl p-5 space-y-4"
             style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <h2 className="text-xs font-bold text-white/50 uppercase tracking-widest">
-              {data?.user_id ? "Reenviar invitación" : "Enviar invitación"}
-            </h2>
-            <input
-              type="email"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              placeholder="correo@ejemplo.com"
-              required
-              className={inputBase}
-              style={inputStyle}
-              onFocus={focusMagenta}
-              onBlur={blurGray}
-            />
-            {inviteResult && (
-              <div className="text-xs rounded-xl px-3 py-2"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }}>
-                {inviteResult.msg}
-                {inviteResult.link && (
-                  <div className="mt-1.5 font-mono break-all text-xs" style={{ color: "#e91e8c" }}>
-                    {inviteResult.link}
+            <h2 className="text-xs font-bold text-white/50 uppercase tracking-widest">Gestionar acceso</h2>
+
+            {/* Tabs */}
+            <div className="flex rounded-xl overflow-hidden" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+              {(["cuenta", "invitacion"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => { setAccesoTab(t); setAccResult(null); setInviteResult(null); }}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold transition-all"
+                  style={{
+                    background: accesoTab === t ? "rgba(233,30,140,0.15)" : "transparent",
+                    color: accesoTab === t ? "#e91e8c" : "rgba(255,255,255,0.4)",
+                    borderRadius: 9,
+                  }}
+                >
+                  {t === "cuenta" ? <KeyRound size={11} /> : <Mail size={11} />}
+                  {t === "cuenta" ? "Crear cuenta" : "Invitar"}
+                </button>
+              ))}
+            </div>
+
+            {accesoTab === "cuenta" ? (
+              <form onSubmit={handleCrearCuenta} className="space-y-3">
+                <p className="text-white/35 text-xs">Email y contraseña directos. Acceso inmediato al panel.</p>
+                <input
+                  type="email"
+                  value={accEmail}
+                  onChange={(e) => setAccEmail(e.target.value)}
+                  placeholder="email@comercial.com"
+                  required
+                  className={inputBase}
+                  style={{ ...inputStyle, fontSize: "13px" }}
+                  onFocus={focusMagenta}
+                  onBlur={blurGray}
+                />
+                <div className="relative">
+                  <input
+                    type={showAccPass ? "text" : "password"}
+                    value={accPass}
+                    onChange={(e) => setAccPass(e.target.value)}
+                    placeholder="Contraseña (mín. 8 caracteres)"
+                    required
+                    minLength={8}
+                    className={inputBase}
+                    style={{ ...inputStyle, fontSize: "13px", paddingRight: "2.75rem" }}
+                    onFocus={focusMagenta}
+                    onBlur={blurGray}
+                  />
+                  <button type="button" onClick={() => setShowAccPass(!showAccPass)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors">
+                    {showAccPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
+                {accResult && (
+                  <div className="text-xs rounded-xl px-3 py-2"
+                    style={{
+                      background: accResult.ok ? "rgba(57,211,83,0.08)" : "rgba(233,30,140,0.08)",
+                      border: `1px solid ${accResult.ok ? "rgba(57,211,83,0.25)" : "rgba(233,30,140,0.25)"}`,
+                      color: accResult.ok ? "#39d353" : "#e91e8c",
+                    }}>
+                    {accResult.ok ? "✓ Cuenta creada correctamente" : accResult.error}
                   </div>
                 )}
-              </div>
+                <button
+                  type="submit"
+                  disabled={accLoading}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-white text-sm disabled:opacity-60"
+                  style={{ background: "linear-gradient(135deg, #e91e8c, #c2166e)" }}
+                >
+                  <KeyRound size={13} />
+                  {accLoading ? "Creando…" : "Crear cuenta"}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleInvite} className="space-y-3">
+                <p className="text-white/35 text-xs">El comercial recibirá un enlace para poner su propia contraseña. Válido 48h.</p>
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="correo@ejemplo.com"
+                  required
+                  className={inputBase}
+                  style={{ ...inputStyle, fontSize: "13px" }}
+                  onFocus={focusMagenta}
+                  onBlur={blurGray}
+                />
+                {inviteResult && (
+                  <div className="text-xs rounded-xl px-3 py-2"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }}>
+                    {inviteResult.msg}
+                    {inviteResult.link && (
+                      <div className="mt-1.5 font-mono break-all" style={{ color: "#e91e8c" }}>
+                        {inviteResult.link}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  disabled={inviting}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-white text-sm disabled:opacity-60"
+                  style={{ background: "rgba(233,30,140,0.15)", border: "1px solid rgba(233,30,140,0.2)", color: "#e91e8c" }}
+                >
+                  <Mail size={13} />
+                  {inviting ? "Enviando…" : "Enviar invitación"}
+                </button>
+              </form>
             )}
-            <button
-              type="submit"
-              disabled={inviting}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-white text-sm disabled:opacity-60 transition-all"
-              style={{ background: "rgba(233,30,140,0.15)", border: "1px solid rgba(233,30,140,0.2)", color: "#e91e8c" }}
-            >
-              <Mail size={14} />
-              {inviting ? "Enviando…" : "Enviar invitación"}
-            </button>
-          </form>
-
-          {/* Quick nav */}
-          <div className="rounded-2xl p-5 space-y-2"
-            style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <h2 className="text-xs font-bold text-white/50 uppercase tracking-widest mb-3">Ir a usuarios</h2>
-            <a
-              href="/admin/usuarios"
-              className="flex items-center gap-2 text-sm font-semibold transition-colors"
-              style={{ color: "#e91e8c" }}
-            >
-              Gestionar usuarios →
-            </a>
           </div>
         </div>
       </div>

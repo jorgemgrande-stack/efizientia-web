@@ -82,6 +82,11 @@ export const api = {
           `/api/admin/comerciales/${id}/invite`,
           { method: "POST", body: JSON.stringify({ email }) }
         ),
+      createAccount: (id: number, email: string, password: string) =>
+        apiFetch<{ ok: boolean; user: unknown }>(
+          `/api/admin/comerciales/${id}/crear-cuenta`,
+          { method: "POST", body: JSON.stringify({ email, password }) }
+        ),
     },
     users: {
       list: () => apiFetch<unknown[]>("/api/admin/users"),
