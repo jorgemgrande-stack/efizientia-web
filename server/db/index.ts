@@ -44,16 +44,42 @@ const DB_PATH = path.isAbsolute(config.DB_PATH)
   ? config.DB_PATH
   : path.resolve(process.cwd(), config.DB_PATH);
 
-// Asegurar que el directorio existe (necesario en Railway y otros entornos)
-import { mkdirSync } from "fs";
+import { mkdirSync, rmSync, existsSync } from "fs";
+
+// Asegurar que el directorio de datos existe
 mkdirSync(path.dirname(DB_PATH), { recursive: true });
+
+// ── Stale lock cleanup ────────────────────────────────────────────────────────
+// node-sqlite3-wasm usa un VFS propio que protege la DB creando un directorio
+// "<db>.lock". El problema en Railway: el contenedor anterior muere por SIGKILL
+// (sin graceful shutdown) → el directorio .lock queda en el volumen para siempre
+// → todos los deployments siguientes fallan con "database is locked" aunque no
+// haya ningún proceso activo. Como solo hay UNA instancia, si el directorio
+// existe al arrancar siempre es un lock huérfano: lo eliminamos.
+const lockPath = `${DB_PATH}.lock`;
+if (existsSync(lockPath)) {
+  try {
+    rmSync(lockPath, { recursive: true, force: true });
+    console.log("[DB] Stale lock removed:", lockPath);
+  } catch (e) {
+    console.warn("[DB] Could not remove stale lock:", e);
+  }
+}
 
 const _rawDb = new Database(DB_PATH);
 export const db = patchDb(_rawDb);
 
-// busy_timeout: evita "database is locked" en rolling deployments (Railway)
-// WAL mode: lecturas concurrentes mientras se escribe
-db.exec("PRAGMA busy_timeout = 10000; PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;");
+// busy_timeout primero: 30 s de espera si hay contención real (rolling deploy breve)
+db.exec("PRAGMA busy_timeout = 30000;");
+db.exec("PRAGMA foreign_keys = ON;");
+
+// WAL mode: necesita lock exclusivo para cambiar el modo → no-fatal si falla.
+// Una vez que el contenedor anterior muere, el siguiente ciclo ya tendrá WAL.
+try {
+  db.exec("PRAGMA journal_mode = WAL;");
+} catch (e) {
+  console.warn("[DB] WAL mode not set (rolling deploy overlap?):", (e as Error).message);
+}
 
 // Crear tablas si no existen
 initSchema(db);
