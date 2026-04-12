@@ -282,12 +282,25 @@ export default function HumanoProfile() {
     HUMANOS.find((h) => h.slug === params.slug) ?? undefined
   );
 
+  // Testimonios aleatorios — hook ANTES de cualquier return condicional
+  const [testimonials, setTestimonials] = useState<HumanoData["testimonials"]>([]);
+
   useEffect(() => {
     fetch(`/api/profiles/${params.slug}`)
       .then((r) => { if (!r.ok) throw new Error("not found"); return r.json(); })
       .then((data) => setHumano(normalizeApiProfile(data as Record<string, unknown>)))
       .catch(() => setHumano((prev) => prev ?? null));
   }, [params.slug]);
+
+  // Actualiza testimonios cuando humano carga (inicial o desde API)
+  useEffect(() => {
+    if (!humano) return;
+    if (humano.testimonials.length >= 2) {
+      setTestimonials(humano.testimonials);
+    } else {
+      setTestimonials([...TESTIMONIAL_POOL].sort(() => Math.random() - 0.5).slice(0, 3));
+    }
+  }, [humano]);
 
   // ── Estados de carga / no encontrado ──
   if (humano === undefined) {
@@ -329,13 +342,6 @@ export default function HumanoProfile() {
   const initials = humano.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
   const whatsappUrl = `${WHATSAPP_BASE}?text=${encodeURIComponent(humano.whatsappMsg)}`;
   const widgetUrl = humano.invoiceCtaUrl || WIDGET_URL;
-
-  // Testimonios: usa los propios si hay ≥2, si no aleatorios del pool
-  const [testimonials] = useState<HumanoData["testimonials"]>(() => {
-    if (humano.testimonials.length >= 2) return humano.testimonials;
-    return [...TESTIMONIAL_POOL].sort(() => Math.random() - 0.5).slice(0, 3);
-  });
-
   const services = humano.services.length >= 2 ? humano.services : DEFAULT_SERVICES;
   const process  = humano.process.length >= 2  ? humano.process  : DEFAULT_PROCESS;
 
