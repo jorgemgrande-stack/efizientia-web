@@ -11,7 +11,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 // Importar DB primero (abre conexión y ejecuta schema)
-import "./db/index.js";
+import { db } from "./db/index.js";
 
 // Routers
 import authRouter from "./routes/auth.js";
@@ -24,6 +24,25 @@ import { config } from "./config.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Auto-seed admin en producción si la tabla users está vacía
+function autoSeedIfEmpty() {
+  try {
+    const count = (db.prepare("SELECT COUNT(*) as n FROM users").get() as { n: number })?.n ?? 0;
+    if (count === 0 && config.ADMIN_EMAIL && config.ADMIN_PASSWORD) {
+      // Importación dinámica para no cargar bcrypt en cada arranque
+      import("bcryptjs").then(({ default: bcrypt }) => {
+        const hash = bcrypt.hashSync(config.ADMIN_PASSWORD!, 12);
+        db.prepare(
+          "INSERT INTO users (email, password_hash, name, role, status) VALUES (?, ?, 'Administrador', 'admin', 'active')"
+        ).run(config.ADMIN_EMAIL, hash);
+        console.log(`[Seed] Admin creado: ${config.ADMIN_EMAIL}`);
+      }).catch(console.error);
+    }
+  } catch {
+    // Tabla aún no existe — initSchema la creará en el siguiente arranque
+  }
+}
 
 async function startServer() {
   const app = express();
@@ -60,6 +79,7 @@ async function startServer() {
   // ── Arrancar ──────────────────────────────────────────────────────────────
   server.listen(config.PORT, () => {
     console.log(`[Server] Running on http://localhost:${config.PORT}/ (${config.NODE_ENV})`);
+    autoSeedIfEmpty();
   });
 }
 

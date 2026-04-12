@@ -44,6 +44,10 @@ const DB_PATH = path.isAbsolute(config.DB_PATH)
   ? config.DB_PATH
   : path.resolve(process.cwd(), config.DB_PATH);
 
+// Asegurar que el directorio existe (necesario en Railway y otros entornos)
+import { mkdirSync } from "fs";
+mkdirSync(path.dirname(DB_PATH), { recursive: true });
+
 const _rawDb = new Database(DB_PATH);
 export const db = patchDb(_rawDb);
 

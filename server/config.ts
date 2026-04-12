@@ -15,4 +15,6 @@ export const config = {
   SMTP_PASS: process.env.SMTP_PASS ?? "",
   SMTP_FROM: process.env.SMTP_FROM ?? "Efizientia <noreply@efizientia.es>",
   APP_URL: process.env.APP_URL ?? "http://localhost:3000",
+  ADMIN_EMAIL: process.env.ADMIN_EMAIL ?? "",
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD ?? "",
 } as const;
