@@ -349,256 +349,248 @@ export default function HumanoProfile() {
     <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'Nunito Sans', sans-serif" }}>
       <Navbar />
 
-      {/* ══ 1. HERO ════════════════════════════════════════════════════════ */}
+      {/* ══ 1. HERO — foto pequeña izq · iframe prominente der ════════════ */}
       <section
-        className="relative pt-28 pb-14 overflow-hidden"
-        style={{ background: "linear-gradient(135deg, #0a0a0a 0%, #0f0520 60%, #0a0a0a 100%)" }}
+        id="factura"
+        className="relative pt-24 pb-0 overflow-hidden"
+        style={{ background: "linear-gradient(160deg, #0a0a0a 0%, #0f0520 55%, #0a0a0a 100%)" }}
       >
         <div
           className="absolute inset-0 pointer-events-none"
-          style={{ background: "radial-gradient(ellipse at 30% 50%, rgba(233,30,140,0.08) 0%, transparent 60%)" }}
+          style={{ background: "radial-gradient(ellipse at 65% 40%, rgba(233,30,140,0.09) 0%, transparent 55%)" }}
         />
         <div className="container mx-auto px-4 lg:px-8 max-w-7xl relative z-10">
+          {/* Breadcrumb */}
           <Link href="/humanos">
             <span className="inline-flex items-center gap-2 text-sm text-white/40 hover:text-white/70 transition-colors cursor-pointer mb-8">
               <ArrowLeft size={14} />Todos los asesores
             </span>
           </Link>
 
-          <div className="grid lg:grid-cols-2 gap-12 items-start">
-            {/* Columna izq: info */}
-            <div>
+          {/* Grid principal: tarjeta asesor (5/12) · iframe (7/12) */}
+          <div className="grid lg:grid-cols-12 gap-8 items-stretch">
+
+            {/* ── Columna izquierda: tarjeta del asesor ── */}
+            <div className="lg:col-span-5 flex flex-col">
               <div
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold mb-6 uppercase tracking-widest"
-                style={{ background: "rgba(233,30,140,0.12)", border: "1px solid rgba(233,30,140,0.25)", color: "#e91e8c" }}
+                className="rounded-2xl p-7 flex flex-col flex-1"
+                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
               >
-                Asesor Energético
-              </div>
-
-              <h1 className="text-4xl md:text-5xl font-black text-white mb-2 leading-tight" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                {humano.fullName || humano.name}
-              </h1>
-              {humano.role && <p className="text-white/50 text-lg mb-3">{humano.role}</p>}
-              {humano.tagline && <p className="text-white/70 text-base leading-relaxed mb-6">{humano.tagline}</p>}
-
-              {/* Estado */}
-              <div
-                className="inline-flex items-center gap-3 px-4 py-2.5 rounded-xl mb-6"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
-              >
-                <StatusDot status={humano.status} />
-              </div>
-
-              {/* Stats */}
-              {humano.stats.length > 0 && (
-                <div className="flex flex-wrap gap-3 mb-8">
-                  {humano.stats.map((stat) => (
-                    <div key={stat.label} className="px-4 py-2.5 rounded-xl"
-                      style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
-                      <div className="text-lg font-black" style={{ color: "#e91e8c" }}>{stat.value}</div>
-                      <div className="text-xs text-white/50">{stat.label}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* CTAs */}
-              <div className="flex flex-wrap gap-3 mb-4">
-                <a
-                  href="#factura"
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:scale-105"
-                  style={{ background: "linear-gradient(135deg, #e91e8c, #7b2ff7)", boxShadow: "0 0 24px rgba(233,30,140,0.35)" }}
-                >
-                  <Zap size={16} />Subir factura
-                </a>
-                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:scale-105"
-                  style={{ background: "#25D366" }}>
-                  <MessageCircle size={16} />WhatsApp
-                </a>
-                <a href={PHONE}
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:bg-white/10"
-                  style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}>
-                  <Phone size={16} />Llamar
-                </a>
-                <a href={EMAIL}
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:bg-white/10"
-                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
-                  <Mail size={16} />Email
-                </a>
-              </div>
-              {humano.schedule && (
-                <p className="text-white/30 text-xs">Te atiendo de {humano.schedule}. Urgencias por WhatsApp.</p>
-              )}
-            </div>
-
-            {/* Columna der: foto */}
-            <div className="relative">
-              <div className="rounded-2xl overflow-hidden"
-                style={{ border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 0 60px rgba(233,30,140,0.15)" }}>
-                {humano.image ? (
-                  <>
-                    <img src={humano.image} alt={humano.name}
-                      className="w-full object-cover object-top" style={{ maxHeight: 520 }}
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                        const fb = e.currentTarget.nextElementSibling as HTMLElement;
-                        if (fb) fb.style.display = "flex";
-                      }} />
-                    <div className="w-full hidden items-center justify-center py-24"
-                      style={{ background: `linear-gradient(135deg, ${avatarColor}20, rgba(0,0,0,0.8))` }}>
-                      <div className="w-40 h-40 rounded-full flex items-center justify-center text-6xl font-black text-white"
-                        style={{ background: `linear-gradient(135deg, ${avatarColor}, ${avatarColor}80)` }}>
+                {/* Foto pequeña + badge estado */}
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="relative flex-shrink-0">
+                    {humano.image ? (
+                      <>
+                        <img
+                          src={humano.image}
+                          alt={humano.name}
+                          className="w-20 h-20 rounded-2xl object-cover object-top"
+                          style={{ border: "2px solid rgba(233,30,140,0.3)" }}
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                            const fb = e.currentTarget.nextElementSibling as HTMLElement;
+                            if (fb) fb.style.display = "flex";
+                          }}
+                        />
+                        <div
+                          className="w-20 h-20 rounded-2xl hidden items-center justify-center text-2xl font-black text-white"
+                          style={{ background: `linear-gradient(135deg, ${avatarColor}, ${avatarColor}80)`, border: "2px solid rgba(233,30,140,0.3)" }}
+                        >
+                          {initials}
+                        </div>
+                      </>
+                    ) : (
+                      <div
+                        className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-black text-white"
+                        style={{ background: `linear-gradient(135deg, ${avatarColor}, ${avatarColor}80)`, border: "2px solid rgba(233,30,140,0.3)" }}
+                      >
                         {initials}
                       </div>
+                    )}
+                    {/* Dot de estado sobre la foto */}
+                    <div
+                      className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2"
+                      style={{
+                        background: humano.status === "online" ? "#39d353" : humano.status === "busy" ? "#f59e0b" : "#6b7280",
+                        borderColor: "#111",
+                        boxShadow: `0 0 6px ${humano.status === "online" ? "#39d353" : humano.status === "busy" ? "#f59e0b" : "#6b7280"}`,
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold mb-2 uppercase tracking-wider"
+                      style={{ background: "rgba(233,30,140,0.12)", border: "1px solid rgba(233,30,140,0.25)", color: "#e91e8c" }}
+                    >
+                      Asesor Energético
                     </div>
-                  </>
-                ) : (
-                  <div className="flex items-center justify-center py-24"
-                    style={{ background: `linear-gradient(135deg, ${avatarColor}20, rgba(0,0,0,0.8))` }}>
-                    <div className="w-40 h-40 rounded-full flex items-center justify-center text-6xl font-black text-white"
-                      style={{ background: `linear-gradient(135deg, ${avatarColor}, ${avatarColor}80)` }}>
-                      {initials}
-                    </div>
+                    <StatusDot status={humano.status} />
+                  </div>
+                </div>
+
+                {/* Nombre + rol + tagline */}
+                <h1
+                  className="text-3xl font-black text-white mb-1 leading-tight"
+                  style={{ fontFamily: "'Montserrat', sans-serif" }}
+                >
+                  {humano.fullName || humano.name}
+                </h1>
+                {humano.role && <p className="text-white/50 text-sm mb-3">{humano.role}</p>}
+                {humano.tagline && (
+                  <p className="text-white/65 text-sm leading-relaxed mb-5">{humano.tagline}</p>
+                )}
+
+                {/* Stats */}
+                {humano.stats.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 mb-5">
+                    {humano.stats.map((stat) => (
+                      <div
+                        key={stat.label}
+                        className="rounded-xl px-3 py-2.5 text-center"
+                        style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}
+                      >
+                        <div className="text-base font-black leading-none mb-0.5" style={{ color: "#e91e8c" }}>{stat.value}</div>
+                        <div className="text-xs text-white/40 leading-tight">{stat.label}</div>
+                      </div>
+                    ))}
                   </div>
                 )}
+
+                {/* Separador */}
+                <div className="flex-1" />
+                <div className="pt-5 mt-5" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+                  {/* CTAs */}
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white text-sm transition-all hover:scale-[1.02]"
+                      style={{ background: "#25D366" }}
+                    >
+                      <MessageCircle size={15} />WhatsApp
+                    </a>
+                    <a
+                      href={PHONE}
+                      className="flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-white text-sm transition-all hover:bg-white/10"
+                      style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}
+                    >
+                      <Phone size={15} />Llamar
+                    </a>
+                  </div>
+                  <a
+                    href={EMAIL}
+                    className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl font-semibold text-sm transition-all hover:bg-white/10"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }}
+                  >
+                    <Mail size={14} />{EMAIL.replace("mailto:", "")}
+                  </a>
+                  {humano.schedule && (
+                    <p className="text-white/25 text-xs text-center mt-3">
+                      Horario: {humano.schedule} · Urgencias por WhatsApp
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* ══ 2. WIDGET KIWATIO + RANKING VIVO ══════════════════════════════ */}
-      <section id="factura" className="py-16" style={{ background: "linear-gradient(180deg, #0a0a0a, #0f0520 50%, #0a0a0a)" }}>
-        <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
-          <div className="grid lg:grid-cols-3 gap-8 items-start">
-
-            {/* iFrame — 2/3 */}
-            <div className="lg:col-span-2">
-              <div className="mb-5">
-                <div
-                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mb-3 uppercase tracking-widest"
-                  style={{ background: "rgba(233,30,140,0.12)", border: "1px solid rgba(233,30,140,0.25)", color: "#e91e8c" }}
-                >
-                  Análisis gratuito · 2 minutos
+            {/* ── Columna derecha: iframe prominente ── */}
+            <div className="lg:col-span-7 flex flex-col">
+              <div className="mb-3 flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Zap size={14} style={{ color: "#e91e8c" }} />
+                    <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "#e91e8c" }}>
+                      Análisis gratuito · 2 minutos
+                    </span>
+                  </div>
+                  <h2 className="text-xl font-black text-white" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                    Sube tu factura y descubre cuánto ahorras
+                  </h2>
                 </div>
-                <h2 className="text-2xl font-black text-white mb-1" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                  Sube tu factura y descubre cuánto ahorras
-                </h2>
-                <p className="text-white/50 text-sm">
-                  Sin compromiso. Te digo exactamente si estás pagando de más y cuánto.
-                </p>
               </div>
               <div
-                className="rounded-2xl overflow-hidden"
-                style={{ border: "1px solid rgba(233,30,140,0.2)", boxShadow: "0 0 48px rgba(233,30,140,0.1)" }}
+                className="rounded-2xl overflow-hidden flex-1"
+                style={{
+                  border: "1px solid rgba(233,30,140,0.25)",
+                  boxShadow: "0 0 60px rgba(233,30,140,0.12)",
+                  minHeight: 560,
+                }}
               >
                 <iframe
                   src={widgetUrl}
                   title="Analiza tu factura de energía"
-                  className="w-full block"
-                  style={{ height: 580, border: "none", background: "#fff" }}
+                  className="w-full h-full block"
+                  style={{ minHeight: 560, border: "none", background: "#fff" }}
                   loading="lazy"
                 />
-              </div>
-            </div>
-
-            {/* Ranking — 1/3 */}
-            <div>
-              <div className="mb-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#39d353", boxShadow: "0 0 6px #39d353" }} />
-                  <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "#39d353" }}>En directo</span>
-                </div>
-                <h2 className="text-2xl font-black text-white" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                  Top Compañías
-                </h2>
-                <p className="text-white/40 text-xs mt-1">
-                  Últimos 90 días · {humano.name.split(" ")[0]}
-                </p>
-              </div>
-              <div
-                className="rounded-2xl p-5"
-                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
-              >
-                <LiveRanking initialCompanies={humano.topCompanies} />
-              </div>
-
-              {/* Micro-stats debajo del ranking */}
-              <div
-                className="mt-4 rounded-2xl p-5 grid grid-cols-3 gap-3 text-center"
-                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
-              >
-                {[
-                  { v: "95%",  l: "Resueltos" },
-                  { v: "48h",  l: "Tiempo medio" },
-                  { v: "4.9",  l: "Valoración" },
-                ].map((s) => (
-                  <div key={s.l}>
-                    <div className="text-base font-black" style={{ color: "#e91e8c" }}>{s.v}</div>
-                    <div className="text-xs text-white/40 mt-0.5 leading-tight">{s.l}</div>
-                  </div>
-                ))}
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ══ 3. SERVICIOS + TESTIMONIOS + PROCESO ══════════════════════════ */}
-      <section className="py-16" style={{ background: "#0a0a0a" }}>
+      {/* ══ 2. RANKING + SERVICIOS + PROCESO (sin huecos) ═════════════════ */}
+      <section className="py-14" style={{ background: "#0a0a0a" }}>
         <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
-          <div className="grid lg:grid-cols-3 gap-8">
+          <div className="grid lg:grid-cols-3 gap-6">
+
+            {/* Ranking vivo */}
+            <div
+              className="rounded-2xl p-6"
+              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#39d353", boxShadow: "0 0 5px #39d353" }} />
+                <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "#39d353" }}>En directo</span>
+              </div>
+              <h2 className="text-lg font-black text-white mb-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+                Top Compañías
+              </h2>
+              <p className="text-white/35 text-xs mb-5">Últimos 90 días · {humano.name.split(" ")[0]}</p>
+              <LiveRanking initialCompanies={humano.topCompanies} />
+              {/* Micro-stats */}
+              <div className="grid grid-cols-3 gap-2 mt-5 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                {[{ v: "95%", l: "Éxito" }, { v: "48h", l: "Cierre" }, { v: "4.9★", l: "Valoración" }].map((s) => (
+                  <div key={s.l} className="text-center">
+                    <div className="text-sm font-black" style={{ color: "#e91e8c" }}>{s.v}</div>
+                    <div className="text-xs text-white/35 mt-0.5">{s.l}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             {/* En qué te ayudo */}
-            <div className="rounded-2xl p-7" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-              <h2 className="text-xl font-black text-white mb-6" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+            <div
+              className="rounded-2xl p-6"
+              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
+            >
+              <h2 className="text-lg font-black text-white mb-5" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                 En qué te ayudo
               </h2>
               <ul className="space-y-3">
                 {services.map((service) => (
                   <li key={service} className="flex items-start gap-3">
-                    <CheckCircle size={16} className="flex-shrink-0 mt-0.5" style={{ color: "#39d353" }} />
+                    <CheckCircle size={15} className="flex-shrink-0 mt-0.5" style={{ color: "#39d353" }} />
                     <span className="text-white/70 text-sm leading-relaxed">{service}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            {/* Testimonios */}
-            <div className="rounded-2xl p-7" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-              <h2 className="text-xl font-black text-white mb-6" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                Qué dicen mis clientes
-              </h2>
-              <div className="space-y-4">
-                {testimonials.map((t, i) => (
-                  <div key={i} className="rounded-xl p-4"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                    <div className="flex gap-0.5 mb-2.5">
-                      {[...Array(5)].map((_, j) => (
-                        <Star key={j} size={11} fill="#f59e0b" style={{ color: "#f59e0b" }} />
-                      ))}
-                    </div>
-                    <p className="text-white/80 text-sm leading-relaxed mb-3 italic">"{t.text}"</p>
-                    <div>
-                      <div className="text-white font-bold text-sm">{t.author}</div>
-                      <div className="text-white/40 text-xs">{t.detail}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Cómo trabajamos */}
-            <div className="rounded-2xl p-7" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>
-              <h2 className="text-xl font-black text-white mb-6" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+            <div
+              className="rounded-2xl p-6"
+              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
+            >
+              <h2 className="text-lg font-black text-white mb-5" style={{ fontFamily: "'Montserrat', sans-serif" }}>
                 Cómo trabajamos
               </h2>
-              <div className="space-y-5">
+              <div className="space-y-4">
                 {process.map((step, i) => (
                   <div key={i} className="flex items-start gap-4">
                     <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-black flex-shrink-0"
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black flex-shrink-0"
                       style={{
                         background: i === 0 ? "linear-gradient(135deg, #e91e8c, #7b2ff7)" : "rgba(255,255,255,0.07)",
                         color: i === 0 ? "#fff" : "rgba(255,255,255,0.5)",
@@ -606,17 +598,17 @@ export default function HumanoProfile() {
                     >
                       {String(i + 1).padStart(2, "0")}
                     </div>
-                    <p className="text-white/75 text-sm leading-relaxed pt-1.5">{step}</p>
+                    <p className="text-white/70 text-sm leading-relaxed pt-1">{step}</p>
                   </div>
                 ))}
               </div>
-              <div className="mt-8 pt-6" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
+              <div className="mt-6 pt-5" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
                 <a
                   href="#factura"
-                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:scale-[1.02]"
-                  style={{ background: "linear-gradient(135deg, #e91e8c, #7b2ff7)", boxShadow: "0 0 24px rgba(233,30,140,0.3)" }}
+                  className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-bold text-white text-sm transition-all hover:scale-[1.02]"
+                  style={{ background: "linear-gradient(135deg, #e91e8c, #7b2ff7)", boxShadow: "0 0 20px rgba(233,30,140,0.25)" }}
                 >
-                  <Zap size={16} />Empezar ahora — es gratis<ChevronRight size={16} />
+                  <Zap size={15} />Empezar ahora — es gratis<ChevronRight size={15} />
                 </a>
               </div>
             </div>
@@ -624,9 +616,41 @@ export default function HumanoProfile() {
         </div>
       </section>
 
+      {/* ══ 3. TESTIMONIOS ════════════════════════════════════════════════ */}
+      <section className="py-14" style={{ background: "linear-gradient(180deg, #0a0a0a, #0f0520)" }}>
+        <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
+          <h2
+            className="text-xl font-black text-white mb-7 text-center"
+            style={{ fontFamily: "'Montserrat', sans-serif" }}
+          >
+            Qué dicen mis clientes
+          </h2>
+          <div className="grid md:grid-cols-3 gap-5">
+            {testimonials.map((t, i) => (
+              <div
+                key={i}
+                className="rounded-2xl p-5"
+                style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
+              >
+                <div className="flex gap-0.5 mb-3">
+                  {[...Array(5)].map((_, j) => (
+                    <Star key={j} size={12} fill="#f59e0b" style={{ color: "#f59e0b" }} />
+                  ))}
+                </div>
+                <p className="text-white/80 text-sm leading-relaxed mb-4 italic flex-1">"{t.text}"</p>
+                <div className="pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div className="text-white font-bold text-sm">{t.author}</div>
+                  <div className="text-white/40 text-xs mt-0.5">{t.detail}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ══ 4. FORMULARIO WHATSAPP ═════════════════════════════════════════ */}
-      <section className="py-16" style={{ background: "linear-gradient(180deg, #0a0a0a, #0f0520)" }}>
-        <div className="container mx-auto px-4 lg:px-8 max-w-3xl">
+      <section className="py-14" style={{ background: "#0a0a0a" }}>
+        <div className="container mx-auto px-4 lg:px-8 max-w-2xl">
           <div
             className="rounded-2xl p-8"
             style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
@@ -638,23 +662,23 @@ export default function HumanoProfile() {
 
       {/* ══ 5. SOBRE EL ASESOR (condicional) ══════════════════════════════ */}
       {humano.description && (
-        <section className="py-16" style={{ background: "#0a0a0a" }}>
+        <section className="py-14" style={{ background: "linear-gradient(180deg, #0a0a0a, #0f0520)" }}>
           <div className="container mx-auto px-4 lg:px-8 max-w-3xl text-center">
-            <h2 className="text-2xl font-black text-white mb-6" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+            <h2 className="text-xl font-black text-white mb-5" style={{ fontFamily: "'Montserrat', sans-serif" }}>
               Sobre {humano.name.split(" ")[0]}
             </h2>
-            <p className="text-white/60 text-lg leading-relaxed">{humano.description}</p>
+            <p className="text-white/60 text-base leading-relaxed">{humano.description}</p>
           </div>
         </section>
       )}
 
       {/* ══ 6. OTROS ASESORES ══════════════════════════════════════════════ */}
-      <section className="py-16" style={{ background: "linear-gradient(180deg, #0a0a0a, #0f0520)" }}>
+      <section className="py-14" style={{ background: humano.description ? "#0a0a0a" : "linear-gradient(180deg, #0a0a0a, #0f0520)" }}>
         <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
-          <h2 className="text-2xl font-black text-white mb-8 text-center" style={{ fontFamily: "'Montserrat', sans-serif" }}>
+          <h2 className="text-xl font-black text-white mb-7 text-center" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             Otros asesores del equipo
           </h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {HUMANOS.filter((h) => h.slug !== humano.slug).slice(0, 3).map((h) => {
               const hIdx = HUMANOS.findIndex((x) => x.slug === h.slug);
               const hColor = AVATAR_COLORS[hIdx % AVATAR_COLORS.length];
@@ -662,49 +686,49 @@ export default function HumanoProfile() {
               return (
                 <Link key={h.slug} href={`/humanos/${h.slug}`}>
                   <div
-                    className="rounded-xl p-5 flex items-center gap-4 cursor-pointer transition-all duration-200 hover:-translate-y-1"
+                    className="rounded-xl p-4 flex items-center gap-4 cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
                     style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
                   >
                     <div className="relative flex-shrink-0">
                       {h.image ? (
                         <>
-                          <img src={h.image} alt={h.name} className="w-14 h-14 rounded-full object-cover object-top"
+                          <img src={h.image} alt={h.name} className="w-12 h-12 rounded-xl object-cover object-top"
                             onError={(e) => {
                               e.currentTarget.style.display = "none";
                               const fb = e.currentTarget.nextElementSibling as HTMLElement;
                               if (fb) fb.style.display = "flex";
                             }} />
-                          <div className="w-14 h-14 rounded-full hidden items-center justify-center text-lg font-black text-white"
+                          <div className="w-12 h-12 rounded-xl hidden items-center justify-center text-base font-black text-white"
                             style={{ background: `linear-gradient(135deg, ${hColor}, ${hColor}80)` }}>
                             {hInitials}
                           </div>
                         </>
                       ) : (
-                        <div className="w-14 h-14 rounded-full flex items-center justify-center text-lg font-black text-white"
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center text-base font-black text-white"
                           style={{ background: `linear-gradient(135deg, ${hColor}, ${hColor}80)` }}>
                           {hInitials}
                         </div>
                       )}
-                      <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2"
+                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2"
                         style={{ background: h.status === "online" ? "#39d353" : "#f59e0b", borderColor: "#0a0a0a" }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-black text-white truncate" style={{ fontFamily: "'Montserrat', sans-serif" }}>{h.name}</div>
-                      <div className="text-white/50 text-xs truncate">{h.role}</div>
+                      <div className="font-black text-white text-sm truncate" style={{ fontFamily: "'Montserrat', sans-serif" }}>{h.name}</div>
+                      <div className="text-white/45 text-xs truncate mt-0.5">{h.role}</div>
                     </div>
-                    <ChevronRight size={16} className="text-white/30 flex-shrink-0" />
+                    <ChevronRight size={14} className="text-white/25 flex-shrink-0" />
                   </div>
                 </Link>
               );
             })}
           </div>
-          <div className="text-center mt-8">
+          <div className="text-center mt-7">
             <Link href="/humanos">
               <span
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-sm cursor-pointer transition-all duration-200 hover:scale-105"
-                style={{ background: "rgba(233,30,140,0.12)", border: "1px solid rgba(233,30,140,0.3)", color: "#e91e8c" }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-bold text-sm cursor-pointer transition-all hover:scale-105"
+                style={{ background: "rgba(233,30,140,0.1)", border: "1px solid rgba(233,30,140,0.25)", color: "#e91e8c" }}
               >
-                Ver todo el equipo<ChevronRight size={14} />
+                Ver todo el equipo<ChevronRight size={13} />
               </span>
             </Link>
           </div>
