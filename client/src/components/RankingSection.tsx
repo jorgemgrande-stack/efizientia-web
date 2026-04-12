@@ -5,7 +5,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 
-const BASE_LOGO = "https://efizientia.es/wp-content/uploads/2025/10/";
+const BASE_LOGO = "/images/";
 
 const INITIAL_RANKING = [
   { id: 8,  pos: 8,  name: "Repsol",         savings: 16, logo: BASE_LOGO + "repsol_png.png",         mover: true  },

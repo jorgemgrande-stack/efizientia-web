@@ -42,7 +42,7 @@ export default function Footer() {
           <div>
             <div className="mb-4">
               <img
-                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/efizientia-logo-dark_f1c2a2ee.png"
+                src="/images/efizientia-logo-dark_f1c2a2ee.png"
                 alt="Efizientia"
                 style={{
                   height: "36px",

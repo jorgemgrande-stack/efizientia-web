@@ -157,7 +157,7 @@ export default function ProcessSection() {
           {/* Right: Image + Magic button */}
           <div className="flex flex-col items-center gap-6">
             <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/efi-hero-couple-bzyFpqprUZCRGccD2XzG2Z.webp"
+              src="/images/efi-hero-couple-bzyFpqprUZCRGccD2XzG2Z.webp"
               alt="Pareja optimizando factura de luz"
               className="rounded-2xl w-full max-w-md object-cover shadow-2xl"
               style={{ maxHeight: "320px" }}

@@ -7,7 +7,8 @@
  * - Mobile: hamburger menu
  */
 import { useState, useEffect } from "react";
-import { Menu, X, Phone, MessageCircle, Facebook, Instagram } from "lucide-react";
+import { Menu, X, Phone, MessageCircle, Facebook, Instagram, LayoutDashboard, LogOut } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navLinks = [
   { label: "Luz", href: "/luz" },
@@ -19,12 +20,15 @@ const navLinks = [
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const panelHref = user?.role === "admin" ? "/admin" : "/panel";
 
   return (
     <>
@@ -39,7 +43,7 @@ export default function Navbar() {
             {/* Logo — versión horizontal con fondo negro, ratio 2.69:1 (500x186px) */}
             <a href="/" className="flex items-center flex-shrink-0">
               <img
-                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/efizientia-logo-dark_f1c2a2ee.png"
+                src="/images/efizientia-logo-dark_f1c2a2ee.png"
                 alt="Efizientia"
                 style={{
                   height: '60px',
@@ -92,6 +96,43 @@ export default function Navbar() {
               <a href="https://www.instagram.com/efizientia" target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-white transition-colors">
                 <Instagram size={18} />
               </a>
+
+              {/* Separador + Botón Acceso/Panel */}
+              <span className="w-px h-5 bg-white/20" />
+              {user ? (
+                <div className="flex items-center gap-2">
+                  <a
+                    href={panelHref}
+                    className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all"
+                    style={{
+                      border: "1px solid rgba(233,30,140,0.4)",
+                      color: "#e91e8c",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(233,30,140,0.1)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <LayoutDashboard size={13} />
+                    Panel
+                  </a>
+                  <button
+                    onClick={() => logout()}
+                    className="text-white/40 hover:text-white/70 transition-colors"
+                    title="Cerrar sesión"
+                  >
+                    <LogOut size={15} />
+                  </button>
+                </div>
+              ) : (
+                <a
+                  href="/login"
+                  className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg transition-all text-white/60 hover:text-white"
+                  style={{ border: "1px solid rgba(255,255,255,0.15)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(233,30,140,0.5)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)")}
+                >
+                  Acceso
+                </a>
+              )}
             </div>
 
             {/* Mobile Hamburger */}
@@ -130,6 +171,37 @@ export default function Navbar() {
                 >
                   <MessageCircle size={16} /> WhatsApp
                 </a>
+              </div>
+              <div className="border-t border-white/10 pt-3">
+                {user ? (
+                  <div className="flex items-center gap-3">
+                    <a
+                      href={panelHref}
+                      className="flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-lg"
+                      style={{ border: "1px solid rgba(233,30,140,0.4)", color: "#e91e8c" }}
+                      onClick={() => setMenuOpen(false)}
+                    >
+                      <LayoutDashboard size={14} />
+                      Panel
+                    </a>
+                    <button
+                      onClick={() => { logout(); setMenuOpen(false); }}
+                      className="flex items-center gap-1.5 text-sm text-white/50 hover:text-white transition-colors"
+                    >
+                      <LogOut size={14} />
+                      Salir
+                    </button>
+                  </div>
+                ) : (
+                  <a
+                    href="/login"
+                    className="inline-flex items-center gap-1.5 text-sm font-bold px-4 py-2 rounded-lg text-white/60 hover:text-white"
+                    style={{ border: "1px solid rgba(255,255,255,0.15)" }}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Acceso
+                  </a>
+                )}
               </div>
             </div>
           </div>

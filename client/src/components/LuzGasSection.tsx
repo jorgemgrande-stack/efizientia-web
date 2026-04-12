@@ -153,7 +153,7 @@ export function GasSection() {
           {/* Left: Image */}
           <div className="order-2 lg:order-1 flex justify-center">
             <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/efi-gas-man-noa24tA76rogXJBbG7Mi4t.webp"
+              src="/images/efi-gas-man-noa24tA76rogXJBbG7Mi4t.webp"
               alt="Hombre con factura de gas optimizada"
               className="rounded-2xl max-w-sm w-full object-cover shadow-2xl"
               style={{ maxHeight: "420px" }}

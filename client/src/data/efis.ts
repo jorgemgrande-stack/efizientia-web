@@ -26,7 +26,7 @@ export interface EfiData {
   topCompanies: { name: string; score: number; medal: string }[];
 }
 
-const CDN = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D";
+const CDN = "/images"; // personajes Efi servidos localmente desde /public/images/
 
 export const EFIS: EfiData[] = [
   {
@@ -37,7 +37,7 @@ export const EFIS: EfiData[] = [
     tagline: "El que empezó todo. Literalmente.",
     description:
       "Efi es el primero, el más rápido y el que menos se queja cuando la factura llega a 400€. Lleva gorra negra, bombilla en mano y un enchufe azul que no conecta a ningún sitio concreto, pero mola mucho. Su superpoder es encontrar la tarifa perfecta antes de que termines de decir 'precio de la luz'.",
-    image: `${CDN}/efi_50345e3e.jpg`,
+    image: `${CDN}/efi.jpg`,
     color: "#f5c518",
     glowColor: "rgba(245,197,24,0.45)",
     badges: ["Fundador", "Velocidad Luz", "Anti-Endesa", "Gorra Negra"],
@@ -88,7 +88,7 @@ export const EFIS: EfiData[] = [
     tagline: "Marca en rosa lo que te cobran de más.",
     description:
       "Cari llegó de un despacho de auditoría donde descubrió que las facturas de luz tienen más letra pequeña que un contrato de hipoteca. Ahora usa ese conocimiento para el bien. Su marcador magenta ha subrayado más abusos tarifarios que cualquier organismo regulador. Lleva sombrero rojo porque los números la ponen de buen humor.",
-    image: `${CDN}/cari_8db6b1ec.jpg`,
+    image: `${CDN}/cari.jpg`,
     color: "#ff2bd6",
     glowColor: "rgba(255,43,214,0.45)",
     badges: ["Auditora", "Marcador Magenta", "Letra Pequeña", "Sombrero Rojo"],
@@ -139,7 +139,7 @@ export const EFIS: EfiData[] = [
     tagline: "Mientras tú duermes, él ahorra.",
     description:
       "Lummy es naranja como el atardecer y trabaja mejor de noche. Lleva una linterna porque ilumina lo que otros no ven: el potencial de ahorro en las horas valle. Su varita mágica en forma de estrella señala exactamente cuándo poner la lavadora para que no te cueste un riñón. Gorro rojo de duende porque la magia tarifaria es real.",
-    image: `${CDN}/lummy_d68202e0.jpg`,
+    image: `${CDN}/lummy.jpg`,
     color: "#ff6b00",
     glowColor: "rgba(255,107,0,0.45)",
     badges: ["Nocturno", "Maestro Valle", "Anti-Punta", "Gorro Duende"],
@@ -190,7 +190,7 @@ export const EFIS: EfiData[] = [
     tagline: "Si tiene precio, Neo lo baja.",
     description:
       "Neo es verde como los billetes que te ahorra. Lleva una espiral roja de resistencia eléctrica en una mano y un panel con el símbolo del euro en la otra. No negocia con comercializadoras: las convence. Su gorra negra es señal de que va en serio. Ha conseguido reducciones de factura que los propios comerciales no creían posibles.",
-    image: `${CDN}/neo_5fb20abe.jpg`,
+    image: `${CDN}/neo.jpg`,
     color: "#39d353",
     glowColor: "rgba(57,211,83,0.45)",
     badges: ["Negociador", "Ahorro Industrial", "Gorra Negra", "Anti-Margen"],
@@ -241,7 +241,7 @@ export const EFIS: EfiData[] = [
     tagline: "Hamburguesa en mano, factura a la baja.",
     description:
       "Soli es rojo como la salsa picante y sabe exactamente cuánto consume cada electrodoméstico de una cocina profesional. Lleva una hamburguesa porque entiende el negocio de la hostelería desde dentro: el mayor gasto energético no es la luz de la sala, es la freidora que nunca apagan. Su bombilla siempre está encendida, pero a precio de valle.",
-    image: `${CDN}/soli_a5b26b6d.jpg`,
+    image: `${CDN}/soli.jpg`,
     color: "#ff4500",
     glowColor: "rgba(255,69,0,0.45)",
     badges: ["Hostelería", "Experto Cocina", "Anti-Freidora", "Gorra Negra"],
@@ -292,7 +292,7 @@ export const EFIS: EfiData[] = [
     tagline: "El sol es gratis. Tú solo tienes que apuntar bien.",
     description:
       "Volty es morado porque combina el azul del cielo con el rojo del atardecer, y trabaja con paneles solares desde antes de que fueran tendencia. Sombrero de cowboy porque el autoconsumo es el Far West de la energía: sin reglas claras, pero con mucho potencial. Su rayo neon señala el camino hacia la independencia energética.",
-    image: `${CDN}/volty_a7eaa2e5.jpg`,
+    image: `${CDN}/volty.jpg`,
     color: "#9b59b6",
     glowColor: "rgba(155,89,182,0.45)",
     badges: ["Solar", "Autoconsumo", "Cowboy", "Anti-Red"],
@@ -343,7 +343,7 @@ export const EFIS: EfiData[] = [
     tagline: "Si te han cobrado de más, Watty lo encuentra.",
     description:
       "Watty es azul como el frío de una factura de invierno y lleva siempre una factura en la mano y billetes verdes en la otra, porque sabe que el dinero mal cobrado tiene que volver. Gorra roja de alerta porque cuando Watty aparece, algo está mal en tu factura. Especialista en reclamaciones, devoluciones y en hacer que las comercializadoras devuelvan lo que no es suyo.",
-    image: `${CDN}/watty_6a6a57ca.jpg`,
+    image: `${CDN}/watty.jpg`,
     color: "#3498db",
     glowColor: "rgba(52,152,219,0.45)",
     badges: ["Reclamaciones", "Cazafacturas", "Devoluciones", "Gorra Roja"],
@@ -394,7 +394,7 @@ export const EFIS: EfiData[] = [
     tagline: "Con varita mágica y panel solar. La magia es real.",
     description:
       "Faus es marrón como la tierra y lleva sombrero de mago con estrellas porque la eficiencia energética parece magia hasta que te explica los números. Su varita señala el ahorro y su panel solar demuestra que el futuro ya llegó. Tiene brackets porque empezó joven en esto y nunca perdió la sonrisa, ni siquiera cuando le explican que 'la solar es muy cara'.",
-    image: `${CDN}/faus_fbfcf5f8.png`,
+    image: `${CDN}/faus.png`,
     color: "#e67e22",
     glowColor: "rgba(230,126,34,0.45)",
     badges: ["Mago Solar", "Eficiencia", "Brackets", "Sombrero Mago"],
@@ -445,7 +445,7 @@ export const EFIS: EfiData[] = [
     tagline: "Enchufado al futuro desde el primer día.",
     description:
       "Leo es azul eléctrico y lleva gorra naranja porque es el más joven del equipo y el más entusiasmado con los coches eléctricos. Tiene un enchufe rojo en la mano porque sabe que el futuro de la movilidad pasa por la red eléctrica, y él quiere que ese futuro te cueste lo menos posible. Su rayo verde neon es señal de que la energía verde ya está aquí.",
-    image: `${CDN}/leo_eaba499d.png`,
+    image: `${CDN}/leo.png`,
     color: "#00bcd4",
     glowColor: "rgba(0,188,212,0.45)",
     badges: ["Movilidad Eléctrica", "VE", "Enchufe", "Nuevo Fichaje"],

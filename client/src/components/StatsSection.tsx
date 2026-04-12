@@ -82,7 +82,7 @@ export default function StatsSection() {
           {/* Right: Image */}
           <div className="flex justify-center">
             <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/efi-man-bill-L8qtPHyZQtKvtfB6jiF8Ns.webp"
+              src="/images/efi-man-bill-L8qtPHyZQtKvtfB6jiF8Ns.webp"
               alt="Hombre preocupado por factura de luz"
               className="rounded-2xl max-w-sm w-full object-cover shadow-2xl"
               style={{ maxHeight: "400px" }}

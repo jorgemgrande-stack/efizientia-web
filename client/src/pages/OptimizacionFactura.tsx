@@ -9,8 +9,7 @@
 const WIDGET_URL =
   "https://efizientia.kiwatio.net/widget/estudio-factura?token=6%7CgupGAGbFslNaPLq9Oo7v7dYpmzCTOssQ9YLDooxV44583597";
 
-const LOGO_URL =
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/efizientia-logo-dark_f1c2a2ee.png";
+const LOGO_URL = "/images/efizientia-logo-dark_f1c2a2ee.png";
 
 export default function OptimizacionFactura() {
   return (

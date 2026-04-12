@@ -32,7 +32,7 @@ const LUZ_TARIFAS = [
       "Precio fijo 12 meses",
     ],
     highlight: true,
-    logo: "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/audax_logo_d3b4c7f1.png",
+    logo: "/images/audax.png",
   },
   {
     company: "VM Energía",

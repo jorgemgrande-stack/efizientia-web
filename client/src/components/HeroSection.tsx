@@ -12,13 +12,13 @@ import { Play, Zap, CheckCircle2 } from "lucide-react";
 const WIDGET_URL =
   "https://efizientia.kiwatio.net/widget/estudio-factura?token=6%7CgupGAGbFslNaPLq9Oo7v7dYpmzCTOssQ9YLDooxV44583597";
 
-// Imágenes del carrusel subidas al CDN
+// Imágenes del carrusel (servidas localmente desde /public/images/)
 const HERO_IMAGES = [
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/hero1_a3fbf53c.jpg",
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/hero2_195ddc15.jpg",
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/hero3_e3745729.jpg",
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/hero4_fd46090f.jpg",
-  "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D/hero5_e07fdd4c.jpg",
+  "/images/hero1_a3fbf53c.jpg",
+  "/images/hero2_195ddc15.jpg",
+  "/images/hero3_e3745729.jpg",
+  "/images/hero4_fd46090f.jpg",
+  "/images/hero5_e07fdd4c.jpg",
 ];
 
 const SLIDE_DURATION = 5000; // ms por imagen

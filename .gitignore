@@ -110,3 +110,12 @@ temp/
 
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
+
+# SaaS - datos locales
+server/data/*.db
+server/data/*.db-shm
+server/data/*.db-wal
+server/uploads/avatars/*
+!server/uploads/avatars/.gitkeep
+.env
+.env.local

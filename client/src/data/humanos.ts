@@ -4,7 +4,7 @@
  * Basado en el equipo real de efizientia.es/humanos/
  */
 
-const CDN = "https://d2xsxph8kpxj0f.cloudfront.net/310519663410228097/bNfkAWeepfmaxGPG4ffp7D";
+const CDN = "/images"; // avatares locales en /public/images/
 
 export const WIDGET_URL =
   "https://efizientia.kiwatio.net/widget/estudio-factura?token=6%7CgupGAGbFslNaPLq9Oo7v7dYpmzCTOssQ9YLDooxV44583597";
@@ -41,7 +41,7 @@ export const HUMANOS: HumanoData[] = [
     tagline: "El que lleva más facturas analizadas y menos pelos en la lengua.",
     description:
       "Manuel lleva más de 8 años en el sector energético. Empezó en una comercializadora grande, vio cómo funcionaba el sistema por dentro, y decidió pasarse al lado correcto. Ahora usa ese conocimiento para que sus clientes no paguen ni un céntimo de más. Especialista en hogares, pymes y comunidades de vecinos.",
-    image: `${CDN}/manuel_reyes_humano_5f2a1b3c.jpg`,
+    image: `${CDN}/avatar-manuel.jpg`,
     tags: ["Luz", "Gas", "Hogar", "Pyme"],
     status: "online",
     schedule: "08:00–20:00 (L–V)",
@@ -91,7 +91,7 @@ export const HUMANOS: HumanoData[] = [
     tagline: "El que traduce m³ a euros y te dice exactamente cuánto te están robando.",
     description:
       "Faustino es el especialista en gas del equipo. Domina la conversión m³→kWh, los peajes RL y las regularizaciones como nadie. También lleva la cartera de pymes: sabe que una empresa pequeña puede ahorrar más que un hogar grande si se optimiza bien la potencia y la discriminación horaria.",
-    image: `${CDN}/faustino_lobato_humano_8a4f2d1e.jpg`,
+    image: `${CDN}/avatar-faustino.jpg`,
     tags: ["Gas", "Pyme", "Optimización", "RL"],
     status: "online",
     schedule: "08:00–20:00 (L–V)",
@@ -141,7 +141,7 @@ export const HUMANOS: HumanoData[] = [
     tagline: "La que encuentra la tarifa perfecta para tu hogar en menos de 10 minutos.",
     description:
       "Laura se especializó en hogares porque es donde más gente paga de más sin saberlo. Conoce de memoria las tarifas de cada comercializadora y sabe exactamente cuándo merece la pena el PVPC y cuándo no. Su récord: 47% de ahorro en una familia de 4 personas en Jerez.",
-    image: `${CDN}/laura_sanchez_humana_3c7e9f2a.jpg`,
+    image: `${CDN}/avatar-laura.jpg`,
     tags: ["Luz", "Potencia", "Hogar", "PVPC"],
     status: "busy",
     schedule: "10:00–20:00 (L–V)",
@@ -191,7 +191,7 @@ export const HUMANOS: HumanoData[] = [
     tagline: "La que cierra el cambio en minutos y sin papeleo.",
     description:
       "Ana es la especialista en contratación y gestión documental. Si hay alguien que sabe hacer que el proceso de cambio de compañía sea rápido, indoloro y sin sorpresas, esa es Ana. Domina los procesos SEPA, las altas de nuevos suministros y los cambios de titular.",
-    image: `${CDN}/ana_lopez_humana_7b1d4e8c.jpg`,
+    image: `${CDN}/avatar-ana.jpg`,
     tags: ["Contratación", "SEPA", "Altas", "Gestión"],
     status: "online",
     schedule: "09:00–18:00 (L–V)",
@@ -241,7 +241,7 @@ export const HUMANOS: HumanoData[] = [
     tagline: "El que te dice exactamente cuánta potencia necesitas (pista: menos de la que tienes).",
     description:
       "Diego es el obseso de la potencia contratada. Sabe que la mayoría de hogares y empresas tienen más potencia de la que necesitan, y eso se paga todos los meses. Su especialidad es el análisis de maxímetro y la optimización de los períodos P1–P6 para reducir la factura sin tocar el consumo.",
-    image: `${CDN}/diego_perez_humano_2e5a8f4b.jpg`,
+    image: `${CDN}/avatar-diego.jpg`,
     tags: ["Potencia", "Optimización", "Pyme", "Industrial"],
     status: "busy",
     schedule: "10:00–19:00 (L–V)",
