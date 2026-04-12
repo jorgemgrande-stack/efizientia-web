@@ -5,10 +5,33 @@
  * Replicando fielmente el diseño de efizientia.es/humanos/
  */
 import { Link } from "wouter";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Phone, MessageCircle, Mail, Zap, Users, Star, TrendingDown } from "lucide-react";
 import { HUMANOS, WIDGET_URL, WHATSAPP_BASE, PHONE, EMAIL } from "@/data/humanos";
+import type { HumanoData } from "@/data/humanos";
+
+function normalizeApiProfile(p: Record<string, unknown>): HumanoData {
+  return {
+    slug: String(p.slug ?? ""),
+    name: String(p.name ?? p.display_name ?? ""),
+    fullName: String(p.fullName ?? p.display_name ?? ""),
+    role: String(p.role ?? ""),
+    tagline: String(p.tagline ?? ""),
+    description: String(p.description ?? p.about_text ?? ""),
+    image: String(p.image ?? p.photo_url ?? ""),
+    tags: Array.isArray(p.tags) ? p.tags.map(String) : [],
+    status: (["online", "busy", "offline"].includes(String(p.status)) ? p.status : "online") as HumanoData["status"],
+    schedule: String(p.schedule ?? ""),
+    stats: Array.isArray(p.stats) ? (p.stats as HumanoData["stats"]) : [],
+    services: Array.isArray(p.services) ? p.services.map(String) : [],
+    testimonials: Array.isArray(p.testimonials) ? (p.testimonials as HumanoData["testimonials"]) : [],
+    process: Array.isArray(p.process) ? p.process.map(String) : [],
+    topCompanies: Array.isArray(p.topCompanies) ? (p.topCompanies as HumanoData["topCompanies"]) : [],
+    whatsappMsg: String(p.whatsappMsg ?? "Hola, me gustaría que me ayudaras con mi factura de energía."),
+  };
+}
 
 // Placeholder de foto cuando no hay imagen real en CDN
 const AVATAR_PLACEHOLDER = (name: string, color: string) => {
@@ -46,6 +69,22 @@ function StatusDot({ status }: { status: "online" | "busy" | "offline" }) {
 }
 
 export default function Humanos() {
+  // Empezamos mostrando los perfiles estáticos; los de la API los sobreescriben/añaden
+  const [humanos, setHumanos] = useState<HumanoData[]>(HUMANOS);
+
+  useEffect(() => {
+    fetch("/api/profiles")
+      .then((r) => r.json())
+      .then((apiProfiles: unknown[]) => {
+        const normalized = apiProfiles.map((p) => normalizeApiProfile(p as Record<string, unknown>));
+        // Los perfiles de la API reemplazan el estático si el slug coincide; el resto se añade al inicio
+        const apiSlugs = new Set(normalized.map((p) => p.slug));
+        const staticOnly = HUMANOS.filter((h) => !apiSlugs.has(h.slug));
+        setHumanos([...normalized, ...staticOnly]);
+      })
+      .catch(() => { /* fallback silencioso a estáticos */ });
+  }, []);
+
   return (
     <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'Nunito Sans', sans-serif" }}>
       <Navbar />
@@ -114,7 +153,7 @@ export default function Humanos() {
       <section className="py-16" style={{ background: "#0a0a0a" }}>
         <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {HUMANOS.map((humano, idx) => {
+            {humanos.map((humano, idx) => {
               const avatar = AVATAR_PLACEHOLDER(humano.name, AVATAR_COLORS[idx % AVATAR_COLORS.length]);
               const whatsappUrl = `${WHATSAPP_BASE}?text=${encodeURIComponent(humano.whatsappMsg)}`;
 

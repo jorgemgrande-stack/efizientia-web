@@ -14,6 +14,28 @@ import {
   CheckCircle, Star, ChevronRight, User,
 } from "lucide-react";
 import { HUMANOS, WIDGET_URL, WHATSAPP_BASE, PHONE, EMAIL } from "@/data/humanos";
+import type { HumanoData } from "@/data/humanos";
+
+function normalizeApiProfile(p: Record<string, unknown>): HumanoData {
+  return {
+    slug: String(p.slug ?? ""),
+    name: String(p.name ?? p.display_name ?? ""),
+    fullName: String(p.fullName ?? p.display_name ?? ""),
+    role: String(p.role ?? ""),
+    tagline: String(p.tagline ?? ""),
+    description: String(p.description ?? p.about_text ?? ""),
+    image: String(p.image ?? p.photo_url ?? ""),
+    tags: Array.isArray(p.tags) ? p.tags.map(String) : [],
+    status: (["online", "busy", "offline"].includes(String(p.status)) ? p.status : "online") as HumanoData["status"],
+    schedule: String(p.schedule ?? ""),
+    stats: Array.isArray(p.stats) ? (p.stats as HumanoData["stats"]) : [],
+    services: Array.isArray(p.services) ? p.services.map(String) : [],
+    testimonials: Array.isArray(p.testimonials) ? (p.testimonials as HumanoData["testimonials"]) : [],
+    process: Array.isArray(p.process) ? p.process.map(String) : [],
+    topCompanies: Array.isArray(p.topCompanies) ? (p.topCompanies as HumanoData["topCompanies"]) : [],
+    whatsappMsg: String(p.whatsappMsg ?? "Hola, me gustaría que me ayudaras con mi factura de energía."),
+  };
+}
 
 // Colores por índice para los avatares placeholder
 const AVATAR_COLORS = [
@@ -236,7 +258,36 @@ function CompanyBar({ company, delay }: { company: { pos: number; name: string; 
 
 export default function HumanoProfile() {
   const params = useParams<{ slug: string }>();
-  const humano = HUMANOS.find((h) => h.slug === params.slug);
+  // undefined = cargando, null = no encontrado, HumanoData = ok
+  const [humano, setHumano] = useState<HumanoData | null | undefined>(
+    HUMANOS.find((h) => h.slug === params.slug) ?? undefined
+  );
+
+  useEffect(() => {
+    fetch(`/api/profiles/${params.slug}`)
+      .then((r) => {
+        if (!r.ok) throw new Error("not found");
+        return r.json();
+      })
+      .then((data) => setHumano(normalizeApiProfile(data as Record<string, unknown>)))
+      .catch(() => {
+        // Si la API falla, usar el estático (ya está en el estado inicial) o marcar como null
+        setHumano((prev) => prev ?? null);
+      });
+  }, [params.slug]);
+
+  if (humano === undefined) {
+    return (
+      <div style={{ background: "#0a0a0a", minHeight: "100vh" }}>
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="w-10 h-10 rounded-full border-4 animate-spin"
+            style={{ borderColor: "rgba(233,30,140,0.2)", borderTopColor: "#e91e8c" }} />
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   if (!humano) {
     return (
@@ -262,7 +313,7 @@ export default function HumanoProfile() {
   }
 
   const humanoIdx = HUMANOS.findIndex((h) => h.slug === humano.slug);
-  const avatarColor = AVATAR_COLORS[humanoIdx % AVATAR_COLORS.length];
+  const avatarColor = AVATAR_COLORS[Math.max(humanoIdx, 0) % AVATAR_COLORS.length];
   const initials = humano.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
   const whatsappUrl = `${WHATSAPP_BASE}?text=${encodeURIComponent(humano.whatsappMsg)}`;
 

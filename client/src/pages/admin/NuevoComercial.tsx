@@ -4,9 +4,9 @@
  * Opcionalmente envía una invitación al email indicado.
  */
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useLocation } from "wouter";
-import { Save, AlertCircle, ArrowLeft } from "lucide-react";
+import { Save, AlertCircle, ArrowLeft, Upload, User } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { api, ApiError } from "@/lib/api";
 
@@ -42,6 +42,20 @@ export default function NuevoComercial() {
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoUpload = async (file: File) => {
+    setUploadingPhoto(true);
+    try {
+      const res = await api.upload.avatar(file);
+      setPhotoUrl(res.url);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Error al subir la foto");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   // Auto-generate slug from display name
   const handleNameChange = (value: string) => {
@@ -233,20 +247,54 @@ export default function NuevoComercial() {
                 />
               </Field>
 
-              <Field
-                label="URL foto"
-                hint="URL de la foto de perfil (o déjalo vacío)"
-              >
+              <Field label="Foto de perfil">
                 <input
-                  type="url"
-                  value={photoUrl}
-                  onChange={(e) => setPhotoUrl(e.target.value)}
-                  placeholder="https://… o /images/…"
-                  className={inputBase}
-                  style={inputStyle}
-                  onFocus={(e) => (e.currentTarget.style.borderColor = "#e91e8c")}
-                  onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")}
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handlePhotoUpload(file);
+                    e.target.value = "";
+                  }}
                 />
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-16 h-16 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center"
+                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}
+                  >
+                    {photoUrl ? (
+                      <img src={photoUrl} alt="foto" className="w-full h-full object-cover" />
+                    ) : (
+                      <User size={24} className="text-white/20" />
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingPhoto}
+                      className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all disabled:opacity-50"
+                      style={{ background: "rgba(233,30,140,0.1)", border: "1px solid rgba(233,30,140,0.2)", color: "#e91e8c" }}
+                    >
+                      <Upload size={12} />
+                      {uploadingPhoto ? "Subiendo…" : "Subir foto"}
+                    </button>
+                    {photoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setPhotoUrl("")}
+                        className="w-full text-xs text-white/25 hover:text-white/50 transition-colors"
+                      >
+                        Eliminar foto
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {photoUrl && (
+                  <p className="text-white/25 text-xs mt-1 truncate">{photoUrl}</p>
+                )}
               </Field>
             </div>
 
