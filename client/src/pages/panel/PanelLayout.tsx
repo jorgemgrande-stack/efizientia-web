@@ -6,7 +6,7 @@
 
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { User, LayoutDashboard, Menu, LogOut, ExternalLink } from "lucide-react";
+import { User, LayoutDashboard, Menu, LogOut, ExternalLink, ShieldCheck, Users, UserCog } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface PanelLayoutProps {
@@ -17,6 +17,12 @@ interface PanelLayoutProps {
 const panelNav = [
   { label: "Inicio", href: "/panel", icon: LayoutDashboard, exact: true },
   { label: "Mi Ficha", href: "/panel/mi-ficha", icon: User, exact: false },
+];
+
+const adminNav = [
+  { label: "Dashboard", href: "/admin", icon: LayoutDashboard, exact: true },
+  { label: "Comerciales", href: "/admin/comerciales", icon: Users, exact: false },
+  { label: "Usuarios", href: "/admin/usuarios", icon: UserCog, exact: false },
 ];
 
 export default function PanelLayout({ children, title }: PanelLayoutProps) {
@@ -93,6 +99,42 @@ export default function PanelLayout({ children, title }: PanelLayoutProps) {
               </a>
             );
           })}
+
+          {/* Sección admin — solo visible para administradores */}
+          {user?.role === "admin" && (
+            <div className="mt-4">
+              <div
+                className="flex items-center gap-1.5 px-3 mb-2"
+              >
+                <ShieldCheck size={11} style={{ color: "#e91e8c" }} />
+                <span
+                  className="text-xs font-bold uppercase tracking-widest"
+                  style={{ color: "#e91e8c" }}
+                >
+                  Administración
+                </span>
+              </div>
+              {adminNav.map(({ label, href, icon: Icon, exact }) => {
+                const active = exact ? location === href : location.startsWith(href);
+                return (
+                  <a
+                    key={href}
+                    href={href}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold mb-1 transition-all"
+                    style={{
+                      background: active ? "rgba(233,30,140,0.12)" : "transparent",
+                      color: active ? "#e91e8c" : "rgba(255,255,255,0.6)",
+                      border: active ? "1px solid rgba(233,30,140,0.2)" : "1px solid transparent",
+                    }}
+                    onClick={() => setSideOpen(false)}
+                  >
+                    <Icon size={16} />
+                    {label}
+                  </a>
+                );
+              })}
+            </div>
+          )}
         </nav>
 
         {/* Footer links */}

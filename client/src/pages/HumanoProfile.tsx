@@ -352,7 +352,7 @@ export default function HumanoProfile() {
       {/* ══ 1. HERO — foto pequeña izq · iframe prominente der ════════════ */}
       <section
         id="factura"
-        className="relative pt-24 pb-0 overflow-hidden"
+        className="relative pt-24 pb-12 overflow-hidden"
         style={{ background: "linear-gradient(160deg, #0a0a0a 0%, #0f0520 55%, #0a0a0a 100%)" }}
       >
         <div
@@ -514,14 +514,14 @@ export default function HumanoProfile() {
                 style={{
                   border: "1px solid rgba(233,30,140,0.25)",
                   boxShadow: "0 0 60px rgba(233,30,140,0.12)",
-                  minHeight: 560,
+                  minHeight: 820,
                 }}
               >
                 <iframe
                   src={widgetUrl}
                   title="Analiza tu factura de energía"
                   className="w-full h-full block"
-                  style={{ minHeight: 560, border: "none", background: "#fff" }}
+                  style={{ minHeight: 820, border: "none", background: "#fff" }}
                   loading="lazy"
                 />
               </div>
