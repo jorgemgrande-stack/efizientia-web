@@ -376,16 +376,16 @@ export default function HumanoProfile() {
                 className="rounded-2xl p-7 flex flex-col flex-1"
                 style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}
               >
-                {/* Foto pequeña + badge estado */}
-                <div className="flex items-start gap-4 mb-6">
-                  <div className="relative flex-shrink-0">
+                {/* Foto grande centrada */}
+                <div className="flex flex-col items-center mb-5">
+                  <div className="relative mb-4">
                     {humano.image ? (
                       <>
                         <img
                           src={humano.image}
                           alt={humano.name}
-                          className="w-20 h-20 rounded-2xl object-cover object-top"
-                          style={{ border: "2px solid rgba(233,30,140,0.3)" }}
+                          className="w-28 h-28 rounded-2xl object-cover object-top"
+                          style={{ border: "2px solid rgba(233,30,140,0.35)" }}
                           onError={(e) => {
                             e.currentTarget.style.display = "none";
                             const fb = e.currentTarget.nextElementSibling as HTMLElement;
@@ -393,21 +393,21 @@ export default function HumanoProfile() {
                           }}
                         />
                         <div
-                          className="w-20 h-20 rounded-2xl hidden items-center justify-center text-2xl font-black text-white"
-                          style={{ background: `linear-gradient(135deg, ${avatarColor}, ${avatarColor}80)`, border: "2px solid rgba(233,30,140,0.3)" }}
+                          className="w-28 h-28 rounded-2xl hidden items-center justify-center text-3xl font-black text-white"
+                          style={{ background: `linear-gradient(135deg, ${avatarColor}, ${avatarColor}80)`, border: "2px solid rgba(233,30,140,0.35)" }}
                         >
                           {initials}
                         </div>
                       </>
                     ) : (
                       <div
-                        className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-black text-white"
-                        style={{ background: `linear-gradient(135deg, ${avatarColor}, ${avatarColor}80)`, border: "2px solid rgba(233,30,140,0.3)" }}
+                        className="w-28 h-28 rounded-2xl flex items-center justify-center text-3xl font-black text-white"
+                        style={{ background: `linear-gradient(135deg, ${avatarColor}, ${avatarColor}80)`, border: "2px solid rgba(233,30,140,0.35)" }}
                       >
                         {initials}
                       </div>
                     )}
-                    {/* Dot de estado sobre la foto */}
+                    {/* Dot de estado */}
                     <div
                       className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2"
                       style={{
@@ -417,28 +417,25 @@ export default function HumanoProfile() {
                       }}
                     />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold mb-2 uppercase tracking-wider"
-                      style={{ background: "rgba(233,30,140,0.12)", border: "1px solid rgba(233,30,140,0.25)", color: "#e91e8c" }}
-                    >
-                      Asesor Energético
-                    </div>
-                    <StatusDot status={humano.status} />
+
+                  {/* Badge + estado */}
+                  <div
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold mb-2 uppercase tracking-wider"
+                    style={{ background: "rgba(233,30,140,0.12)", border: "1px solid rgba(233,30,140,0.25)", color: "#e91e8c" }}
+                  >
+                    Asesor Energético
                   </div>
+                  <StatusDot status={humano.status} />
                 </div>
 
-                {/* Nombre + rol + tagline */}
+                {/* Nombre + rol */}
                 <h1
-                  className="text-3xl font-black text-white mb-1 leading-tight"
+                  className="text-2xl font-black text-white mb-0.5 leading-tight text-center"
                   style={{ fontFamily: "'Montserrat', sans-serif" }}
                 >
                   {humano.fullName || humano.name}
                 </h1>
-                {humano.role && <p className="text-white/50 text-sm mb-3">{humano.role}</p>}
-                {humano.tagline && (
-                  <p className="text-white/65 text-sm leading-relaxed mb-5">{humano.tagline}</p>
-                )}
+                {humano.role && <p className="text-white/50 text-sm mb-4 text-center">{humano.role}</p>}
 
                 {/* Stats */}
                 {humano.stats.length > 0 && (
@@ -456,10 +453,27 @@ export default function HumanoProfile() {
                   </div>
                 )}
 
-                {/* Separador */}
-                <div className="flex-1" />
-                <div className="pt-5 mt-5" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-                  {/* CTAs */}
+                {/* Descripción del asesor */}
+                {humano.description && (
+                  <p className="text-white/60 text-sm leading-relaxed mb-5 text-center">{humano.description}</p>
+                )}
+
+                {/* Top compañías */}
+                <div
+                  className="rounded-xl p-4 mb-5"
+                  style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <Zap size={12} style={{ color: "#e91e8c" }} />
+                    <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "#e91e8c" }}>
+                      Top compañías ahora
+                    </span>
+                  </div>
+                  <LiveRanking initialCompanies={humano.topCompanies} />
+                </div>
+
+                {/* CTAs */}
+                <div className="mt-auto pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     <a
                       href={whatsappUrl}
@@ -530,35 +544,10 @@ export default function HumanoProfile() {
         </div>
       </section>
 
-      {/* ══ 2. RANKING + SERVICIOS + PROCESO (sin huecos) ═════════════════ */}
+      {/* ══ 2. SERVICIOS + PROCESO ════════════════════════════════════════ */}
       <section className="py-14" style={{ background: "#0a0a0a" }}>
         <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
-          <div className="grid lg:grid-cols-3 gap-6">
-
-            {/* Ranking vivo */}
-            <div
-              className="rounded-2xl p-6"
-              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 rounded-full animate-pulse" style={{ background: "#39d353", boxShadow: "0 0 5px #39d353" }} />
-                <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "#39d353" }}>En directo</span>
-              </div>
-              <h2 className="text-lg font-black text-white mb-0.5" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-                Top Compañías
-              </h2>
-              <p className="text-white/35 text-xs mb-5">Últimos 90 días · {humano.name.split(" ")[0]}</p>
-              <LiveRanking initialCompanies={humano.topCompanies} />
-              {/* Micro-stats */}
-              <div className="grid grid-cols-3 gap-2 mt-5 pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-                {[{ v: "95%", l: "Éxito" }, { v: "48h", l: "Cierre" }, { v: "4.9★", l: "Valoración" }].map((s) => (
-                  <div key={s.l} className="text-center">
-                    <div className="text-sm font-black" style={{ color: "#e91e8c" }}>{s.v}</div>
-                    <div className="text-xs text-white/35 mt-0.5">{s.l}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className="grid lg:grid-cols-2 gap-6">
 
             {/* En qué te ayudo */}
             <div
@@ -660,20 +649,8 @@ export default function HumanoProfile() {
         </div>
       </section>
 
-      {/* ══ 5. SOBRE EL ASESOR (condicional) ══════════════════════════════ */}
-      {humano.description && (
-        <section className="py-14" style={{ background: "linear-gradient(180deg, #0a0a0a, #0f0520)" }}>
-          <div className="container mx-auto px-4 lg:px-8 max-w-3xl text-center">
-            <h2 className="text-xl font-black text-white mb-5" style={{ fontFamily: "'Montserrat', sans-serif" }}>
-              Sobre {humano.name.split(" ")[0]}
-            </h2>
-            <p className="text-white/60 text-base leading-relaxed">{humano.description}</p>
-          </div>
-        </section>
-      )}
-
-      {/* ══ 6. OTROS ASESORES ══════════════════════════════════════════════ */}
-      <section className="py-14" style={{ background: humano.description ? "#0a0a0a" : "linear-gradient(180deg, #0a0a0a, #0f0520)" }}>
+      {/* ══ 5. OTROS ASESORES ═════════════════════════════════════════════ */}
+      <section className="py-14" style={{ background: "linear-gradient(180deg, #0a0a0a, #0f0520)" }}>
         <div className="container mx-auto px-4 lg:px-8 max-w-7xl">
           <h2 className="text-xl font-black text-white mb-7 text-center" style={{ fontFamily: "'Montserrat', sans-serif" }}>
             Otros asesores del equipo
