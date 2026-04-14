@@ -109,7 +109,7 @@ export default function ChatModal({ efiName, efiColor, efiImage, isOpen, onClose
         </div>
 
         {/* Chatbase iframe */}
-        <div className="flex-1 relative overflow-hidden">
+        <div className="flex-1 relative overflow-auto">
           <iframe
             src="https://www.chatbase.co/chatbot-iframe/uFei5WgxiUCTOUxYCj9nz"
             width="100%"

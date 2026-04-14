@@ -11,7 +11,7 @@
  *  6. Otros asesores del equipo
  */
 import { useParams, Link } from "wouter";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import {
@@ -524,7 +524,7 @@ export default function HumanoProfile() {
                 </div>
               </div>
               <div
-                className="rounded-2xl overflow-hidden flex-1"
+                className="rounded-2xl flex-1"
                 style={{
                   border: "1px solid rgba(233,30,140,0.25)",
                   boxShadow: "0 0 60px rgba(233,30,140,0.12)",

@@ -383,7 +383,7 @@ export default function HeroSection() {
                 minHeight: WIDGET_STEP1_HEIGHT,
                 transition: "height 0.6s cubic-bezier(0.4,0,0.2,1)",
                 backgroundColor: "#fff",
-                overflow: "hidden",
+                overflow: "auto",
               }}
             >
               {!iframeLoaded && (
@@ -406,7 +406,7 @@ export default function HeroSection() {
                 title="Estudio de factura Efizientia"
                 width="100%"
                 frameBorder="0"
-                scrolling="no"
+                scrolling="auto"
                 allow="clipboard-write; camera"
                 onLoad={handleIframeLoad}
                 style={{
