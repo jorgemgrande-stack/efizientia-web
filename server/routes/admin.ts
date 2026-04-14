@@ -16,11 +16,13 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
 import nodemailer from "nodemailer";
+import fs from "fs";
+import path from "path";
 import { db } from "../db/index.js";
 import { requireAdmin } from "../middleware/auth.js";
 import { serializeProfile } from "./profiles.js";
 import { config } from "../config.js";
-import type { AdvisorProfileRow, UserRow } from "../db/types.js";
+import type { AdvisorProfileRow, UserRow, InvitationRow } from "../db/types.js";
 
 const router = Router();
 router.use(requireAdmin);
@@ -513,6 +515,161 @@ router.post("/users/crear", async (req, res) => {
 
   const link = `${config.APP_URL}/invitation/accept/${token}`;
   return res.status(201).json({ ok: true, user: newUser, link });
+});
+
+// ─── Importación masiva desde CSV ────────────────────────────────────────────
+
+function normalizeSlug(raw: string): string {
+  return raw.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9\s-]/g, "").trim()
+    .replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+}
+
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
+function genericBio(displayName: string): string {
+  const first = displayName.split(" ")[0];
+  return `${first} es asesor energético especializado en la optimización de facturas de luz y gas. Ayuda a hogares y empresas a reducir su consumo energético y a encontrar las mejores tarifas del mercado. Contacta directamente para recibir un análisis gratuito de tu factura.`;
+}
+
+function parseCsv(content: string) {
+  const lines = content.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n")
+    .split("\n").filter((l) => l.trim());
+  const [, ...dataLines] = lines;
+  return dataLines.flatMap((line) => {
+    const cols = line.split(";");
+    if (cols.length < 11) return [];
+    const rawDisplayName = (cols[6] ?? cols[0] ?? "").trim();
+    const rawSlug = (cols[1] ?? "").trim();
+    const rawPhone = (cols[8] ?? "").trim();
+    const rawEmail = (cols[10] ?? "").trim();
+    if (!rawDisplayName || !rawSlug) return [];
+    const slug = normalizeSlug(rawSlug);
+    if (!slug) return [];
+    return [{
+      slug,
+      displayName: rawDisplayName,
+      phone: rawPhone || null,
+      email: rawEmail && isValidEmail(rawEmail) ? rawEmail.toLowerCase() : null,
+    }];
+  });
+}
+
+// POST /api/admin/run-import — importación masiva de comerciales desde CSV
+router.post("/run-import", async (_req, res) => {
+  // Buscar CSV: primero junto a los scripts, luego en dist/
+  const candidates = [
+    path.resolve(process.cwd(), "server/scripts/comerciales.csv"),
+    path.resolve(process.cwd(), "comerciales.csv"),
+    path.resolve(path.dirname(new URL(import.meta.url).pathname), "../../server/scripts/comerciales.csv"),
+  ];
+  let csvContent: string | null = null;
+  for (const p of candidates) {
+    if (fs.existsSync(p)) { csvContent = fs.readFileSync(p, "utf-8"); break; }
+  }
+  if (!csvContent) {
+    return res.status(404).json({ error: "CSV no encontrado en el servidor" });
+  }
+
+  const rows = parseCsv(csvContent);
+  const log = {
+    rowsProcessed: 0, profilesCreated: 0, profilesUpdated: 0,
+    usersCreated: 0, usersReused: 0, usersSetInactive: 0,
+    noEmail: 0, invitesSent: 0, invitesSkipped: 0,
+    errors: [] as string[], details: [] as string[],
+  };
+
+  for (const row of rows) {
+    log.rowsProcessed++;
+    try {
+      // 1. Upsert ficha
+      const existingProfile = db.prepare("SELECT id FROM advisor_profiles WHERE slug = ? LIMIT 1")
+        .get(row.slug) as { id: number } | undefined;
+      const aboutText = genericBio(row.displayName);
+
+      if (!existingProfile) {
+        db.prepare(`INSERT INTO advisor_profiles (slug, display_name, phone, whatsapp, public_email, about_text, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)`)
+          .run(row.slug, row.displayName, row.phone, row.phone, row.email, aboutText);
+        log.profilesCreated++;
+        log.details.push(`✅ Ficha creada: /humanos/${row.slug}`);
+      } else {
+        db.prepare(`UPDATE advisor_profiles SET display_name=?, phone=COALESCE(?,phone), whatsapp=COALESCE(?,whatsapp), public_email=COALESCE(?,public_email), about_text=COALESCE(about_text,?), updated_at=datetime('now') WHERE slug=?`)
+          .run(row.displayName, row.phone, row.phone, row.email, aboutText, row.slug);
+        log.profilesUpdated++;
+        log.details.push(`🔄 Ficha actualizada: /humanos/${row.slug}`);
+      }
+
+      const profile = db.prepare("SELECT id FROM advisor_profiles WHERE slug = ? LIMIT 1")
+        .get(row.slug) as { id: number } | undefined;
+
+      // 2. Usuario
+      if (!row.email) { log.noEmail++; log.details.push(`⚠️  Sin email: ${row.displayName}`); continue; }
+
+      const existingUser = db.prepare("SELECT * FROM users WHERE email = ? LIMIT 1")
+        .get(row.email) as UserRow | undefined;
+      let userId: number;
+
+      if (!existingUser) {
+        db.prepare(`INSERT INTO users (email, name, role, status) VALUES (?, ?, 'comercial', 'inactive')`)
+          .run(row.email, row.displayName);
+        const newUser = db.prepare("SELECT id FROM users WHERE email = ? LIMIT 1")
+          .get(row.email) as { id: number };
+        userId = newUser.id;
+        if (profile) db.prepare("UPDATE advisor_profiles SET user_id=?, updated_at=datetime('now') WHERE id=?").run(userId, profile.id);
+        log.usersCreated++;
+        log.details.push(`👤 Usuario creado: ${row.email}`);
+      } else {
+        userId = existingUser.id;
+        db.prepare("UPDATE users SET status='inactive', name=?, updated_at=datetime('now') WHERE id=?")
+          .run(row.displayName, userId);
+        if (profile) {
+          const unlinked = db.prepare("SELECT id FROM advisor_profiles WHERE id=? AND user_id IS NULL LIMIT 1").get(profile.id);
+          if (unlinked) db.prepare("UPDATE advisor_profiles SET user_id=?, updated_at=datetime('now') WHERE id=?").run(userId, profile.id);
+        }
+        log.usersReused++;
+        log.details.push(`🔁 Usuario reutilizado: ${row.email}`);
+      }
+      log.usersSetInactive++;
+
+      // 3. Invitación
+      const pendingInvite = db.prepare(`SELECT id FROM invitations WHERE email=? AND used_at IS NULL AND expires_at > datetime('now') LIMIT 1`)
+        .get(row.email) as { id: number } | undefined;
+      const userFull = db.prepare("SELECT password_hash FROM users WHERE email=? LIMIT 1")
+        .get(row.email) as { password_hash: string } | undefined;
+      const alreadyActivated = !!(userFull?.password_hash && userFull.password_hash !== "");
+
+      if (pendingInvite || alreadyActivated) {
+        log.invitesSkipped++;
+        log.details.push(`⏭️  Invitación omitida: ${row.email}${alreadyActivated ? " (cuenta activada)" : " (pendiente ya existe)"}`);
+        continue;
+      }
+
+      db.prepare("UPDATE invitations SET used_at=datetime('now') WHERE email=? AND used_at IS NULL").run(row.email);
+      const token = nanoid(32);
+      const expires = new Date(Date.now() + 48 * 3_600_000).toISOString();
+      db.prepare(`INSERT INTO invitations (token, email, profile_id, expires_at) VALUES (?, ?, ?, ?)`)
+        .run(token, row.email, profile?.id ?? null, expires);
+
+      try {
+        await sendInvitationEmail(row.email, token, row.displayName);
+        log.invitesSent++;
+        log.details.push(`📧 Invitación enviada: ${row.email}`);
+      } catch (emailErr) {
+        const link = `${config.APP_URL}/invitation/accept/${token}`;
+        log.invitesSent++;
+        log.details.push(`📧 Email falló, enlace: ${link}`);
+      }
+
+    } catch (err) {
+      const msg = `${row.displayName}: ${(err as Error).message}`;
+      log.errors.push(msg);
+      log.details.push(`❌ ERROR ${msg}`);
+    }
+  }
+
+  return res.json({ ok: true, log });
 });
 
 export default router;

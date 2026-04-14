@@ -107,6 +107,8 @@ export const api = {
         }),
       delete: (id: number) =>
         apiFetch<{ ok: boolean }>(`/api/admin/users/${id}`, { method: "DELETE" }),
+      runImport: () =>
+        apiFetch<{ ok: boolean; log: Record<string, unknown> }>("/api/admin/run-import", { method: "POST" }),
       setPassword: (id: number, password: string) =>
         apiFetch<{ ok: boolean }>(`/api/admin/users/${id}/password`, {
           method: "PUT",
