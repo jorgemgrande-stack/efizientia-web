@@ -13,24 +13,35 @@ const router = Router();
 
 function serializeProfile(row: AdvisorProfileRow) {
   // Mezcla: datos editables de columnas + datos estáticos del profile_json
-  const base = row.profile_json ? JSON.parse(row.profile_json) : {};
+  const base: Record<string, unknown> = row.profile_json ? JSON.parse(row.profile_json) : {};
   return {
     ...base,
-    // Los campos editables siempre sobreescriben el JSON estático
+    // Columnas estructuradas (siempre sobreescriben el JSON base)
     slug: row.slug,
     display_name: row.display_name,
     name: row.display_name,
-    fullName: row.display_name,
-    photo_url: row.photo_url ?? base.image ?? null,
-    image: row.photo_url ?? base.image ?? null,
-    phone: row.phone ?? base.phone ?? null,
-    whatsapp: row.whatsapp ?? base.whatsapp ?? null,
-    public_email: row.public_email ?? base.public_email ?? null,
-    about_text: row.about_text ?? base.description ?? null,
-    description: row.about_text ?? base.description ?? null,
-    invoice_cta_url: row.invoice_cta_url ?? base.invoice_cta_url ?? null,
-    is_active: Boolean(row.is_active),
-    updated_at: row.updated_at,
+    fullName: (base.fullName as string | null) || row.display_name,
+    // Campos de profile_json con fallbacks explícitos
+    role:       (base.role as string | null) ?? null,
+    tagline:    (base.tagline as string | null) ?? null,
+    status:     (["online", "busy", "offline"].includes(String(base.status ?? "")))
+                  ? (base.status as string)
+                  : "online",
+    schedule:   (base.schedule as string | null) ?? null,
+    tags:       Array.isArray(base.tags) ? base.tags : [],
+    whatsappMsg: (base.whatsappMsg as string | null) ?? "Hola, me gustaría que me ayudaras con mi factura de energía.",
+    // Campos de columnas estructuradas
+    photo_url:       row.photo_url ?? (base.image as string | null) ?? null,
+    image:           row.photo_url ?? (base.image as string | null) ?? null,
+    phone:           row.phone ?? (base.phone as string | null) ?? null,
+    whatsapp:        row.whatsapp ?? (base.whatsapp as string | null) ?? null,
+    public_email:    row.public_email ?? (base.public_email as string | null) ?? null,
+    about_text:      row.about_text ?? (base.description as string | null) ?? null,
+    description:     row.about_text ?? (base.description as string | null) ?? null,
+    invoice_cta_url: row.invoice_cta_url ?? (base.invoiceCtaUrl as string | null) ?? (base.invoice_cta_url as string | null) ?? null,
+    invoiceCtaUrl:   row.invoice_cta_url ?? (base.invoiceCtaUrl as string | null) ?? (base.invoice_cta_url as string | null) ?? null,
+    is_active:    Boolean(row.is_active),
+    updated_at:   row.updated_at,
   };
 }
 

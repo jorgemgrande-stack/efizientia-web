@@ -68,17 +68,35 @@ router.put("/me", (req: AuthenticatedRequest, res) => {
     return res.status(404).json({ error: "No tienes una ficha pública asociada." });
   }
 
-  const { phone, whatsapp, public_email, about_text, invoice_cta_url, photo_url } =
-    req.body ?? {};
+  // Campos de columnas estructuradas editables por el comercial
+  const { phone, whatsapp, public_email, about_text, photo_url, display_name } = req.body ?? {};
 
-  // Validar URL si se proporciona
-  if (invoice_cta_url && invoice_cta_url !== "") {
-    try {
-      new URL(invoice_cta_url);
-    } catch {
-      return res.status(400).json({ error: "La URL de 'Subir factura' no es válida" });
-    }
+  // Campos que se almacenan en profile_json
+  const { full_name, tagline, role_label, profile_status, schedule, tags, whatsapp_msg } = req.body ?? {};
+
+  // Validaciones
+  if (display_name !== undefined && String(display_name).trim() === "") {
+    return res.status(400).json({ error: "El nombre corto no puede estar vacío" });
   }
+  if (profile_status !== undefined && !["online", "busy", "offline"].includes(String(profile_status))) {
+    return res.status(400).json({ error: "Estado de disponibilidad no válido (online/busy/offline)" });
+  }
+
+  // Merge profile_json con los nuevos valores
+  const currentJson: Record<string, unknown> = profile.profile_json
+    ? JSON.parse(profile.profile_json)
+    : {};
+  if (full_name !== undefined)      currentJson.fullName    = String(full_name).trim() || null;
+  if (tagline !== undefined)        currentJson.tagline     = String(tagline).trim() || null;
+  if (role_label !== undefined)     currentJson.role        = String(role_label).trim() || null;
+  if (profile_status !== undefined) currentJson.status      = profile_status;
+  if (schedule !== undefined)       currentJson.schedule    = String(schedule).trim() || null;
+  if (tags !== undefined)           currentJson.tags        = Array.isArray(tags) ? tags.map(String).filter(Boolean) : [];
+  if (whatsapp_msg !== undefined)   currentJson.whatsappMsg = String(whatsapp_msg).trim() || null;
+
+  const newDisplayName = display_name !== undefined && String(display_name).trim()
+    ? String(display_name).trim()
+    : null;
 
   db.prepare(`
     UPDATE advisor_profiles SET
@@ -86,8 +104,9 @@ router.put("/me", (req: AuthenticatedRequest, res) => {
       whatsapp          = COALESCE(?, whatsapp),
       public_email      = COALESCE(?, public_email),
       about_text        = COALESCE(?, about_text),
-      invoice_cta_url   = COALESCE(?, invoice_cta_url),
       photo_url         = COALESCE(?, photo_url),
+      display_name      = COALESCE(?, display_name),
+      profile_json      = ?,
       updated_at        = datetime('now'),
       updated_by_user_id = ?
     WHERE id = ?
@@ -96,8 +115,9 @@ router.put("/me", (req: AuthenticatedRequest, res) => {
     whatsapp ?? null,
     public_email ?? null,
     about_text ?? null,
-    invoice_cta_url ?? null,
     photo_url ?? null,
+    newDisplayName,
+    JSON.stringify(currentJson),
     req.user!.id,
     profile.id
   );
