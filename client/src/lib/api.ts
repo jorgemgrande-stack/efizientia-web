@@ -59,6 +59,11 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(data),
       }),
+    createProfile: (slug: string, display_name: string) =>
+      apiFetch<unknown>("/api/panel/profile", {
+        method: "POST",
+        body: JSON.stringify({ slug, display_name }),
+      }),
   },
 
   admin: {

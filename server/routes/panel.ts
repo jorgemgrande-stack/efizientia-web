@@ -14,6 +14,38 @@ import type { AdvisorProfileRow } from "../db/types.js";
 const router = Router();
 router.use(requireAuth);
 
+// POST /api/panel/profile — el comercial crea su propia ficha si no tiene ninguna
+router.post("/profile", (req: AuthenticatedRequest, res) => {
+  const existing = db
+    .prepare("SELECT id FROM advisor_profiles WHERE user_id = ? LIMIT 1")
+    .get(req.user!.id);
+  if (existing) return res.status(409).json({ error: "Ya tienes una ficha asociada." });
+
+  const { slug, display_name } = req.body ?? {};
+  if (!slug || !display_name) {
+    return res.status(400).json({ error: "slug y display_name son obligatorios" });
+  }
+
+  // Validar slug: solo letras, números y guiones
+  if (!/^[a-z0-9-]+$/.test(slug)) {
+    return res.status(400).json({ error: "El slug solo puede contener letras minúsculas, números y guiones" });
+  }
+
+  const taken = db.prepare("SELECT id FROM advisor_profiles WHERE slug = ? LIMIT 1").get(slug);
+  if (taken) return res.status(409).json({ error: "Esa URL ya está en uso, elige otra" });
+
+  db.prepare(`
+    INSERT INTO advisor_profiles (slug, display_name, user_id)
+    VALUES (?, ?, ?)
+  `).run(slug, display_name, req.user!.id);
+
+  const profile = db
+    .prepare("SELECT * FROM advisor_profiles WHERE user_id = ? LIMIT 1")
+    .get(req.user!.id) as AdvisorProfileRow;
+
+  return res.status(201).json(serializeProfile(profile));
+});
+
 // GET /api/panel/me
 router.get("/me", (req: AuthenticatedRequest, res) => {
   const profile = db

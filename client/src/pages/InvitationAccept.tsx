@@ -123,13 +123,13 @@ export default function InvitationAccept() {
             <div className="text-center py-4">
               <CheckCircle size={48} className="mx-auto mb-4" style={{ color: "#39d353" }} />
               <h2 className="text-xl font-bold text-white mb-2">¡Cuenta activada!</h2>
-              <p className="text-white/60 text-sm mb-6">Ya puedes acceder a tu panel de asesor.</p>
+              <p className="text-white/60 text-sm mb-2">Tu cuenta está lista. Inicia sesión y crea tu ficha pública para que tus clientes puedan encontrarte.</p>
               <button
                 onClick={() => navigate("/login")}
                 className="w-full py-3 rounded-xl font-bold text-white transition-all hover:scale-[1.02]"
                 style={{ background: "linear-gradient(135deg, #e91e8c, #c2166e)" }}
               >
-                Ir al panel
+                Iniciar sesión y crear mi ficha
               </button>
             </div>
           )}

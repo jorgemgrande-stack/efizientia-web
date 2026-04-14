@@ -10,6 +10,7 @@ import {
   Camera, Save, Eye, EyeOff, CheckCircle, AlertCircle,
   ExternalLink, Key
 } from "lucide-react";
+import { useLocation } from "wouter";
 import PanelLayout from "./PanelLayout";
 import { api, ApiError } from "@/lib/api";
 
@@ -68,6 +69,7 @@ function InputField({
 }
 
 export default function MiFicha() {
+  const [, navigate] = useLocation();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [noProfile, setNoProfile] = useState(false);
@@ -183,16 +185,8 @@ export default function MiFicha() {
   }
 
   if (noProfile) {
-    return (
-      <PanelLayout title="Mi Ficha">
-        <div
-          className="rounded-2xl p-8 text-center"
-          style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}
-        >
-          <p className="text-white/50">No tienes una ficha asociada. Contacta con el administrador.</p>
-        </div>
-      </PanelLayout>
-    );
+    navigate("/panel");
+    return null;
   }
 
   return (

@@ -5,9 +5,9 @@
  */
 
 import { useEffect, useState } from "react";
-import { User, ExternalLink, ChevronRight, MessageCircle, Mail, X, LogIn } from "lucide-react";
+import { User, ExternalLink, ChevronRight, MessageCircle, Mail, X, LogIn, Zap, AlertCircle } from "lucide-react";
 import PanelLayout from "./PanelLayout";
-import { api } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ProfileData {
@@ -171,11 +171,32 @@ export default function PanelIndex() {
   const [showKiwatio, setShowKiwatio] = useState(false);
   const [showContacto, setShowContacto] = useState(false);
 
+  // Crear ficha
+  const [newSlug, setNewSlug] = useState("");
+  const [newDisplayName, setNewDisplayName] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
+
   useEffect(() => {
     api.panel.me()
       .then((data) => setProfile(data as ProfileData))
       .catch(() => setNoProfile(true));
   }, []);
+
+  const handleCreateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError("");
+    setCreating(true);
+    try {
+      const created = await api.panel.createProfile(newSlug.trim(), newDisplayName.trim());
+      setProfile(created as ProfileData);
+      setNoProfile(false);
+    } catch (err) {
+      setCreateError(err instanceof ApiError ? err.message : "Error al crear la ficha");
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const completeness = profile ? [
     !!profile.phone,
@@ -208,21 +229,83 @@ export default function PanelIndex() {
         {/* ── Ficha + Accesos ── */}
         {noProfile ? (
           <div
-            className="rounded-2xl p-8 text-center"
+            className="rounded-2xl p-8"
             style={{ background: "#111111", border: "1px solid rgba(255,255,255,0.08)" }}
           >
-            <User size={48} className="mx-auto mb-4 opacity-20" style={{ color: "#e91e8c" }} />
-            <h2 className="text-lg font-bold text-white mb-2">Aún no tienes ficha pública</h2>
-            <p className="text-white/50 text-sm">
-              El administrador tiene que asociarte un perfil. Contacta con{" "}
-              <button
-                onClick={() => setShowContacto(true)}
-                className="underline font-semibold"
-                style={{ color: "#e91e8c" }}
+            <div className="max-w-sm mx-auto">
+              <User size={44} className="mx-auto mb-4 opacity-20" style={{ color: "#e91e8c" }} />
+              <h2
+                className="text-lg font-black text-white text-center mb-1"
+                style={{ fontFamily: "'Montserrat', sans-serif" }}
               >
-                administración
-              </button>
-            </p>
+                Crea tu ficha pública
+              </h2>
+              <p className="text-white/50 text-sm text-center mb-6">
+                Elige tu nombre público y la URL de tu ficha para que tus clientes puedan encontrarte.
+              </p>
+
+              <form onSubmit={handleCreateProfile} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">
+                    Nombre público
+                  </label>
+                  <input
+                    type="text"
+                    value={newDisplayName}
+                    onChange={(e) => setNewDisplayName(e.target.value)}
+                    placeholder="Tu nombre o el de tu negocio"
+                    required
+                    className="w-full px-4 py-3 rounded-xl text-white text-sm outline-none transition-all"
+                    style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = "#e91e8c")}
+                    onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)")}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">
+                    URL de tu ficha
+                  </label>
+                  <div className="flex items-center gap-0 rounded-xl overflow-hidden"
+                    style={{ border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)" }}>
+                    <span className="px-3 py-3 text-xs text-white/30 whitespace-nowrap border-r"
+                      style={{ borderColor: "rgba(255,255,255,0.1)" }}>
+                      /humanos/
+                    </span>
+                    <input
+                      type="text"
+                      value={newSlug}
+                      onChange={(e) => setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+                      placeholder="tu-nombre"
+                      required
+                      className="flex-1 px-3 py-3 bg-transparent text-white text-sm outline-none"
+                      onFocus={(e) => (e.currentTarget.parentElement!.style.borderColor = "#e91e8c")}
+                      onBlur={(e) => (e.currentTarget.parentElement!.style.borderColor = "rgba(255,255,255,0.12)")}
+                    />
+                  </div>
+                  <p className="text-white/30 text-xs mt-1">Solo letras minúsculas, números y guiones</p>
+                </div>
+
+                {createError && (
+                  <div
+                    className="flex items-center gap-2 text-sm rounded-xl px-4 py-3"
+                    style={{ background: "rgba(233,30,140,0.1)", border: "1px solid rgba(233,30,140,0.3)", color: "#e91e8c" }}
+                  >
+                    <AlertCircle size={14} className="flex-shrink-0" />
+                    {createError}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={creating || !newSlug || !newDisplayName}
+                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white text-sm transition-all hover:scale-[1.02] disabled:opacity-50"
+                  style={{ background: "linear-gradient(135deg, #e91e8c, #c2166e)" }}
+                >
+                  <Zap size={15} />
+                  {creating ? "Creando…" : "Crear mi ficha"}
+                </button>
+              </form>
+            </div>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
