@@ -105,6 +105,17 @@ export const api = {
           method: "POST",
           body: JSON.stringify(data),
         }),
+      delete: (id: number) =>
+        apiFetch<{ ok: boolean }>(`/api/admin/users/${id}`, { method: "DELETE" }),
+      setPassword: (id: number, password: string) =>
+        apiFetch<{ ok: boolean }>(`/api/admin/users/${id}/password`, {
+          method: "PUT",
+          body: JSON.stringify({ password }),
+        }),
+      reinvite: (id: number) =>
+        apiFetch<{ ok: boolean; message: string; link?: string }>(`/api/admin/users/${id}/reinvite`, {
+          method: "POST",
+        }),
     },
     invitation: {
       accept: (token: string, password: string) =>

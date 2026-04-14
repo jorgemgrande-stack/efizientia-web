@@ -9,7 +9,7 @@ import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Phone, MessageCircle, Mail, Zap, Users, Star, TrendingDown } from "lucide-react";
-import { HUMANOS, WIDGET_URL, WHATSAPP_BASE, PHONE, EMAIL } from "@/data/humanos";
+import { WIDGET_URL, WHATSAPP_BASE, PHONE, EMAIL } from "@/data/humanos";
 import type { HumanoData } from "@/data/humanos";
 
 function normalizeApiProfile(p: Record<string, unknown>): HumanoData {
@@ -69,20 +69,17 @@ function StatusDot({ status }: { status: "online" | "busy" | "offline" }) {
 }
 
 export default function Humanos() {
-  // Empezamos mostrando los perfiles estáticos; los de la API los sobreescriben/añaden
-  const [humanos, setHumanos] = useState<HumanoData[]>(HUMANOS);
+  // Solo mostramos los perfiles creados desde el gestor (API)
+  const [humanos, setHumanos] = useState<HumanoData[]>([]);
 
   useEffect(() => {
     fetch("/api/profiles")
       .then((r) => r.json())
       .then((apiProfiles: unknown[]) => {
         const normalized = apiProfiles.map((p) => normalizeApiProfile(p as Record<string, unknown>));
-        // Los perfiles de la API reemplazan el estático si el slug coincide; el resto se añade al inicio
-        const apiSlugs = new Set(normalized.map((p) => p.slug));
-        const staticOnly = HUMANOS.filter((h) => !apiSlugs.has(h.slug));
-        setHumanos([...normalized, ...staticOnly]);
+        setHumanos(normalized);
       })
-      .catch(() => { /* fallback silencioso a estáticos */ });
+      .catch(() => { /* fallback silencioso */ });
   }, []);
 
   return (

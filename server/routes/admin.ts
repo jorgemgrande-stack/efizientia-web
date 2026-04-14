@@ -398,6 +398,69 @@ router.put("/users/:id/status", (req, res) => {
   return res.json({ ok: true });
 });
 
+// DELETE /api/admin/users/:id — borrar usuario (no se puede borrar a uno mismo)
+router.delete("/users/:id", (req: any, res) => {
+  const id = Number(req.params.id);
+  if (req.user?.id === id) {
+    return res.status(400).json({ error: "No puedes borrar tu propia cuenta" });
+  }
+  const user = db.prepare("SELECT id FROM users WHERE id = ?").get(id);
+  if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
+
+  // Desvincular perfiles asociados
+  db.prepare("UPDATE advisor_profiles SET user_id = NULL, updated_at = datetime('now') WHERE user_id = ?").run(id);
+  // Invalidar invitaciones
+  db.prepare("UPDATE invitations SET used_at = datetime('now') WHERE email = (SELECT email FROM users WHERE id = ?)").run(id);
+  // Borrar usuario
+  db.prepare("DELETE FROM users WHERE id = ?").run(id);
+
+  return res.json({ ok: true });
+});
+
+// PUT /api/admin/users/:id/password — cambiar contraseña de cualquier usuario
+router.put("/users/:id/password", async (req, res) => {
+  const id = Number(req.params.id);
+  const { password } = req.body ?? {};
+  if (!password || password.length < 8) {
+    return res.status(400).json({ error: "La contraseña debe tener al menos 8 caracteres" });
+  }
+  const user = db.prepare("SELECT id FROM users WHERE id = ?").get(id);
+  if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
+
+  const hash = bcrypt.hashSync(password, 12);
+  db.prepare("UPDATE users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?").run(hash, id);
+  return res.json({ ok: true });
+});
+
+// POST /api/admin/users/:id/reinvite — reenviar invitación / reset de contraseña
+router.post("/users/:id/reinvite", async (req, res) => {
+  const id = Number(req.params.id);
+  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(id) as UserRow | undefined;
+  if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
+
+  // Invalidar invitaciones anteriores del usuario
+  db.prepare("UPDATE invitations SET used_at = datetime('now') WHERE email = ? AND used_at IS NULL").run(user.email);
+
+  // Buscar perfil vinculado
+  const profile = db.prepare("SELECT * FROM advisor_profiles WHERE user_id = ? LIMIT 1").get(id) as AdvisorProfileRow | undefined;
+
+  const token = nanoid(32);
+  const expires = new Date(Date.now() + 48 * 3_600_000).toISOString();
+  db.prepare(`
+    INSERT INTO invitations (token, email, profile_id, expires_at)
+    VALUES (?, ?, ?, ?)
+  `).run(token, user.email, profile?.id ?? null, expires);
+
+  try {
+    await sendInvitationEmail(user.email, token, profile?.display_name ?? user.name);
+    return res.json({ ok: true, message: "Invitación reenviada por email" });
+  } catch (e) {
+    console.error("[EMAIL]", e);
+    const link = `${config.APP_URL}/invitation/accept/${token}`;
+    return res.json({ ok: true, message: "No se pudo enviar el email. Enlace manual:", link });
+  }
+});
+
 // POST /api/admin/users/crear — crear usuario (admin o comercial) con invitación opcional
 router.post("/users/crear", async (req, res) => {
   const { email, name, role, invite_profile_id } = req.body ?? {};
