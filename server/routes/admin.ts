@@ -20,7 +20,7 @@ import { db } from "../db/index.js";
 import { requireAdmin } from "../middleware/auth.js";
 import { serializeProfile } from "./profiles.js";
 import { config } from "../config.js";
-import type { AdvisorProfileRow, UserRow, InvitationRow } from "../db/types.js";
+import type { AdvisorProfileRow, UserRow } from "../db/types.js";
 
 const router = Router();
 router.use(requireAdmin);
@@ -60,23 +60,115 @@ async function sendInvitationEmail(email: string, token: string, profileName: st
     auth: { user: config.SMTP_USER, pass: config.SMTP_PASS },
   });
 
+  const firstName = profileName.split(" ")[0];
+
   await transporter.sendMail({
     from: config.SMTP_FROM,
     to: email,
-    subject: "Activa tu acceso al panel de Efizientia",
-    html: `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>Hola, ${profileName} 👋</h2>
-        <p>El equipo de Efizientia te ha invitado a gestionar tu ficha pública en el panel de asesores.</p>
-        <p style="margin: 32px 0;">
-          <a href="${link}"
-             style="background:#e91e8c;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:bold;">
-            Activar mi cuenta
-          </a>
-        </p>
-        <p style="color:#888;font-size:13px;">Este enlace expira en 48 horas. Si no esperabas este email, puedes ignorarlo.</p>
-      </div>
-    `,
+    subject: `${firstName}, activa tu acceso al panel de Efizientia`,
+    html: `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:'Helvetica Neue',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:40px 16px;">
+    <tr><td align="center">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+
+        <!-- Logo -->
+        <tr><td align="center" style="padding-bottom:32px;">
+          <img src="${config.APP_URL}/images/efizientia-logo-dark_f1c2a2ee.png"
+               alt="Efizientia" height="36"
+               style="display:block;height:36px;object-fit:contain;" />
+        </td></tr>
+
+        <!-- Card principal -->
+        <tr><td style="background:#111111;border-radius:16px;border:1px solid rgba(255,255,255,0.08);
+                        box-shadow:0 0 60px rgba(233,30,140,0.10);padding:40px 36px;">
+
+          <!-- Badge -->
+          <p style="margin:0 0 20px;text-align:center;">
+            <span style="display:inline-block;background:rgba(233,30,140,0.12);
+                         border:1px solid rgba(233,30,140,0.3);border-radius:20px;
+                         color:#e91e8c;font-size:11px;font-weight:700;
+                         letter-spacing:0.08em;text-transform:uppercase;padding:5px 14px;">
+              Panel de Asesores · Efizientia
+            </span>
+          </p>
+
+          <!-- Título -->
+          <h1 style="margin:0 0 12px;font-size:26px;font-weight:900;color:#ffffff;text-align:center;line-height:1.2;">
+            Hola, ${firstName} 👋
+          </h1>
+          <p style="margin:0 0 28px;font-size:15px;color:rgba(255,255,255,0.60);text-align:center;line-height:1.6;">
+            El equipo de <strong style="color:#fff;">Efizientia</strong> te invita a gestionar
+            tu ficha pública como asesor energético.<br>
+            Activa tu cuenta en menos de un minuto.
+          </p>
+
+          <!-- Separador -->
+          <div style="height:1px;background:rgba(255,255,255,0.07);margin:0 0 28px;"></div>
+
+          <!-- Qué vas a poder hacer -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+            <tr>
+              <td style="padding:8px 0;color:rgba(255,255,255,0.55);font-size:13px;">
+                <span style="color:#e91e8c;font-weight:700;margin-right:8px;">✦</span>
+                Editar tu ficha pública y foto de perfil
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;color:rgba(255,255,255,0.55);font-size:13px;">
+                <span style="color:#e91e8c;font-weight:700;margin-right:8px;">✦</span>
+                Configurar tu widget de análisis de facturas
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 0;color:rgba(255,255,255,0.55);font-size:13px;">
+                <span style="color:#e91e8c;font-weight:700;margin-right:8px;">✦</span>
+                Gestionar tus clientes y usuarios asignados
+              </td>
+            </tr>
+          </table>
+
+          <!-- CTA -->
+          <p style="text-align:center;margin:0 0 24px;">
+            <a href="${link}"
+               style="display:inline-block;background:linear-gradient(135deg,#e91e8c,#c2166e);
+                      color:#ffffff;font-size:15px;font-weight:800;text-decoration:none;
+                      padding:16px 40px;border-radius:12px;letter-spacing:0.02em;">
+              Activar mi cuenta →
+            </a>
+          </p>
+
+          <!-- Link alternativo -->
+          <p style="margin:0 0 24px;font-size:12px;color:rgba(255,255,255,0.30);text-align:center;">
+            O copia este enlace en tu navegador:<br>
+            <span style="color:#e91e8c;word-break:break-all;">${link}</span>
+          </p>
+
+          <!-- Separador -->
+          <div style="height:1px;background:rgba(255,255,255,0.07);margin:0 0 20px;"></div>
+
+          <!-- Aviso expiración -->
+          <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.25);text-align:center;line-height:1.6;">
+            Este enlace expira en <strong style="color:rgba(255,255,255,0.40);">48 horas</strong>.
+            Si no esperabas este email, puedes ignorarlo.
+          </p>
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td align="center" style="padding-top:28px;">
+          <p style="margin:0;font-size:11px;color:rgba(255,255,255,0.20);">
+            © ${new Date().getFullYear()} Efizientia · Asesoría Energética ·
+            <a href="${config.APP_URL}" style="color:rgba(255,255,255,0.30);text-decoration:none;">efizientia.es</a>
+          </p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
   });
 }
 
@@ -358,56 +450,6 @@ router.post("/users/crear", async (req, res) => {
 
   const link = `${config.APP_URL}/invitation/accept/${token}`;
   return res.status(201).json({ ok: true, user: newUser, link });
-});
-
-// POST /api/admin/invitation/accept — activar cuenta desde token
-router.post("/invitation/accept", async (req, res) => {
-  const { token, password } = req.body ?? {};
-  if (!token || !password) return res.status(400).json({ error: "Token y contraseña requeridos" });
-  if (password.length < 8) return res.status(400).json({ error: "La contraseña debe tener al menos 8 caracteres" });
-
-  const invitation = db.prepare(`
-    SELECT * FROM invitations WHERE token = ? AND used_at IS NULL LIMIT 1
-  `).get(token) as InvitationRow | undefined;
-
-  if (!invitation) return res.status(400).json({ error: "Enlace inválido o ya utilizado" });
-  if (new Date(invitation.expires_at) < new Date()) {
-    return res.status(400).json({ error: "Este enlace ha expirado. Solicita una nueva invitación." });
-  }
-
-  // Crear o activar usuario
-  const existingUser = db.prepare("SELECT * FROM users WHERE email = ? LIMIT 1").get(invitation.email) as UserRow | undefined;
-  const hash = bcrypt.hashSync(password, 12);
-
-  let userId: number;
-  if (existingUser) {
-    db.prepare(`
-      UPDATE users SET password_hash = ?, status = 'active', updated_at = datetime('now') WHERE id = ?
-    `).run(hash, existingUser.id);
-    userId = existingUser.id;
-  } else {
-    const profile = invitation.profile_id
-      ? db.prepare("SELECT display_name FROM advisor_profiles WHERE id = ?").get(invitation.profile_id) as { display_name: string } | undefined
-      : undefined;
-
-    db.prepare(`
-      INSERT INTO users (email, password_hash, name, role, status)
-      VALUES (?, ?, ?, 'comercial', 'active')
-    `).run(invitation.email, hash, profile?.display_name ?? invitation.email);
-
-    const newUser = db.prepare("SELECT id FROM users WHERE email = ? LIMIT 1").get(invitation.email) as { id: number };
-    userId = newUser.id;
-  }
-
-  // Vincular usuario al perfil
-  if (invitation.profile_id) {
-    db.prepare("UPDATE advisor_profiles SET user_id = ?, updated_at = datetime('now') WHERE id = ?").run(userId, invitation.profile_id);
-  }
-
-  // Marcar invitación como usada
-  db.prepare("UPDATE invitations SET used_at = datetime('now') WHERE id = ?").run(invitation.id);
-
-  return res.json({ ok: true, message: "Cuenta activada correctamente. Ya puedes iniciar sesión." });
 });
 
 export default router;

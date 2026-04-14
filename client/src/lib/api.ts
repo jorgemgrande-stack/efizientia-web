@@ -103,7 +103,7 @@ export const api = {
     },
     invitation: {
       accept: (token: string, password: string) =>
-        apiFetch<{ ok: boolean; message: string }>("/api/admin/invitation/accept", {
+        apiFetch<{ ok: boolean; message: string }>("/api/auth/invitation/accept", {
           method: "POST",
           body: JSON.stringify({ token, password }),
         }),
